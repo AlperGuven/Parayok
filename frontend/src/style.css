@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: "Instrument Sans", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  line-height: 1.5;
+  font-weight: 400;
+  color: #e5e5e5;
+  background: #061733;
+  background: linear-gradient(0deg,rgba(6, 23, 51, 1) 73%, rgba(188, 253, 180, 1) 95%, rgba(255, 249, 2, 1) 98%);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: #061733;
+  background: linear-gradient(0deg,rgba(6, 23, 51, 1) 73%, rgba(188, 253, 180, 1) 95%, rgba(255, 249, 2, 1) 98%);
+}
+
+.neon-card {
+  background-color: #041628;
+  box-shadow: 0 0 20px #00485c, 0 0 40px #00485c33;
+  border: 1px solid #00485c;
+}
+
+.neon-button {
+  background-color: #00fbff;
+  color: #061733;
+  box-shadow: 0 0 10px #00fbff, 0 0 20px #00fbff66;
+}
+
+.neon-button:hover {
+  background-color: #00e6e6;
+  box-shadow: 0 0 15px #00fbff, 0 0 30px #00fbff66;
+}
+
+.app-background {
+  background: #061733;
+  background: linear-gradient(0deg,rgba(6, 23, 51, 1) 73%, rgba(188, 253, 180, 1) 95%, rgba(255, 249, 2, 1) 98%);
+}
+
+.estimation-part-bg {
+  background: #0C6C6E;
+background: radial-gradient(circle,rgba(12, 108, 110, 1) 0%, rgba(12, 108, 110, 1) 50%, rgba(4, 22, 40, 1) 100%);
+}

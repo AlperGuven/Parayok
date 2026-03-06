@@ -1,2 +1,7 @@
 # Parayok
-Sprint Poker game like app
+
+A real-time planning poker application using Laravel and Vue.js.
+
+## Structure
+- `backend`: Laravel API
+- `frontend`: Vue.js Application

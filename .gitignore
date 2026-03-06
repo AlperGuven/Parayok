@@ -1,0 +1,33 @@
+# General
+.DS_Store
+.idea
+.vscode
+*.log
+
+# Backend (Laravel)
+backend/vendor/
+backend/node_modules/
+backend/npm-debug.log
+backend/yarn-error.log
+backend/.env
+backend/.env.backup
+backend/.phpunit.result.cache
+backend/Homestead.json
+backend/Homestead.yaml
+backend/auth.json
+backend/public/storage
+backend/public/hot
+backend/storage/*.key
+backend/.phpactor.json
+
+# Frontend (Vue/Vite)
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+frontend/npm-debug.log
+frontend/yarn-error.log
+
+# Root
+node_modules/

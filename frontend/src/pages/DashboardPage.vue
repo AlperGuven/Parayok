@@ -64,7 +64,7 @@ async function logout() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#041628]">
+  <div class="min-h-screen app-background">
     <header class="bg-black border-b border-[#fdfc04] shadow-glow-gold relative z-10">
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
         <div class="flex items-center">

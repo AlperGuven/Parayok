@@ -18,11 +18,9 @@ async function loginWithJira() {
 <template>
   <div class="min-h-screen flex items-center justify-center bg-[#041628]">
     <div class="art-deco-card p-12 rounded-none text-center max-w-md w-full mx-4">
-      <div class="mb-8 flex justify-center">
+      <div class="mb-2 flex justify-center">
         <img :src="logo" alt="Parayok" class="h-48 mx-auto mb-4" />
       </div>
-
-      <h1 class="text-4xl font-bold text-[#fdfc04] mb-4 font-display tracking-widest uppercase">Parayok</h1>
 
       <p class="text-gray-400 mb-8 font-sans text-lg">Estimate Jira issues with your team in real-time</p>
 

@@ -7,19 +7,20 @@
   line-height: 1.5;
   font-weight: 400;
   color: #fdfc04; /* Default text gold */
-  background: #061733;
-    background: linear-gradient(0deg,rgba(6, 23, 51, 1) 73%, rgba(188, 253, 180, 1) 95%, rgba(255, 249, 2, 1) 98%);
-
+  background: #041628;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background: #041628;
+  font-family: "Instrument Sans", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+.app-background {
   background: #061733;
   background: linear-gradient(0deg,rgba(6, 23, 51, 1) 73%, rgba(188, 253, 180, 1) 95%, rgba(255, 249, 2, 1) 98%);
-  font-family: "Instrument Sans", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-
 }
 
 h1, h2, h3, h4, h5, h6 {

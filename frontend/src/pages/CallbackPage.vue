@@ -54,11 +54,15 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-50">
-    <div class="text-center p-8 bg-white rounded-lg shadow-md">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-      <p class="text-gray-600">Signing you in...</p>
-      <p class="text-xs text-gray-400 mt-2">Check console for details</p>
+  <div class="min-h-screen flex items-center justify-center bg-[#041628]">
+    <div class="art-deco-card p-12 text-center rounded-none shadow-glow-gold max-w-sm w-full mx-4">
+      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#fdfc04] mx-auto mb-6"></div>
+      <p class="text-[#fdfc04] font-display text-xl tracking-widest uppercase mb-2">Signing you in...</p>
+      <p class="text-xs text-gray-400 font-sans uppercase tracking-wider">Please wait</p>
+      
+      <!-- Corner decorations -->
+      <div class="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#fdfc04]"></div>
+      <div class="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#fdfc04]"></div>
     </div>
   </div>
 </template>

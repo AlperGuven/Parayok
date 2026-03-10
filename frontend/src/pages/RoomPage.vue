@@ -136,8 +136,15 @@ async function castVote(value) {
 async function startVoting() {
   if (!selectedIssue.value || !room.value) return;
   try {
-    await api.post(`/api/rooms/${room.value.uuid}/issues/${selectedIssue.value.id}/start-voting`);
+    const issueId = selectedIssue.value.id; // Store current issue ID
+    await api.post(`/api/rooms/${room.value.uuid}/issues/${issueId}/start-voting`);
     await fetchRoom();
+    
+    // Restore selected issue
+    const updatedIssue = room.value.issues.find(i => i.id === issueId);
+    if (updatedIssue) {
+      selectedIssue.value = updatedIssue;
+    }
   } catch (e) {
     console.error("Failed to start voting:", e);
   }
@@ -146,9 +153,16 @@ async function startVoting() {
 async function revealVotes() {
   if (!selectedIssue.value || !room.value) return;
   try {
-    const response = await api.post(`/api/rooms/${room.value.uuid}/issues/${selectedIssue.value.id}/reveal`);
+    const issueId = selectedIssue.value.id; // Store current issue ID
+    const response = await api.post(`/api/rooms/${room.value.uuid}/issues/${issueId}/reveal`);
     revealedVotes.value = response.data.votes || [];
     await fetchRoom();
+    
+    // Restore selected issue
+    const updatedIssue = room.value.issues.find(i => i.id === issueId);
+    if (updatedIssue) {
+      selectedIssue.value = updatedIssue;
+    }
   } catch (e) {
     console.error("Failed to reveal votes:", e);
   }
@@ -157,9 +171,16 @@ async function revealVotes() {
 async function resetVoting() {
   if (!selectedIssue.value || !room.value) return;
   try {
-    await api.post(`/api/rooms/${room.value.uuid}/issues/${selectedIssue.value.id}/reset`);
+    const issueId = selectedIssue.value.id; // Store current issue ID
+    await api.post(`/api/rooms/${room.value.uuid}/issues/${issueId}/reset`);
     currentVote.value = null;
     await fetchRoom();
+    
+    // Restore selected issue
+    const updatedIssue = room.value.issues.find(i => i.id === issueId);
+    if (updatedIssue) {
+      selectedIssue.value = updatedIssue;
+    }
   } catch (e) {
     console.error("Failed to reset voting:", e);
   }

@@ -12,28 +12,19 @@ const rooms = ref([]);
 const loading = ref(true);
 
 onMounted(async () => {
-  console.log("Dashboard: fetching user...");
   await authStore.fetchUser();
-  console.log("Dashboard: user fetched", authStore.user);
-  console.log("Dashboard: isAuthenticated", authStore.isAuthenticated);
 
   if (!authStore.isAuthenticated) {
-    console.log("Dashboard: not authenticated, redirecting to login");
     router.push("/");
     return;
   }
 
-  console.log("Dashboard: authenticated, fetching rooms...");
   await fetchRooms();
-
-  console.log("Dashboard: rooms fetched, rendering...");
 });
 
 async function fetchRooms() {
   try {
-    console.log("fetchRooms: making API call...");
     const response = await api.get("/api/rooms");
-    console.log("fetchRooms: response:", response.data);
     rooms.value = response.data;
   } catch (error) {
     console.error("fetchRooms: Failed to fetch rooms:", error);

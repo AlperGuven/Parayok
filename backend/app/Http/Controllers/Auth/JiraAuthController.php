@@ -27,41 +27,25 @@ class JiraAuthController extends Controller
     public function handleCallback(Request $request, JiraService $jiraService)
     {
         $code = $request->input('code');
-        $state = $request->input('state');
 
-        $config = config('services.atlassian');
+        try {
+            $tokenData = $jiraService->exchangeCodeForToken($code);
+            $atlassianUserData = $jiraService->getAtlassianUser($tokenData['access_token']);
 
-        $response = Http::asForm()->post('https://auth.atlassian.com/oauth/token', [
-            'grant_type' => 'authorization_code',
-            'client_id' => $config['client_id'],
-            'client_secret' => $config['client_secret'],
-            'code' => $code,
-            'redirect_uri' => $config['redirect'],
-        ]);
+            $atlassianUser = new \stdClass();
+            $atlassianUser->id = $atlassianUserData['account_id'];
+            $atlassianUser->name = $atlassianUserData['name'] ?? null;
+            $atlassianUser->nickname = $atlassianUserData['email'];
+            $atlassianUser->email = $atlassianUserData['email'];
+            $atlassianUser->avatar = $atlassianUserData['picture'];
+            $atlassianUser->token = $tokenData['access_token'];
+            $atlassianUser->refreshToken = $tokenData['refresh_token'] ?? null;
+            $atlassianUser->expiresIn = $tokenData['expires_in'] ?? 3600;
 
-        if ($response->failed()) {
-            return response()->json(['error' => 'Failed to get token'], 400);
+            return $this->processUser($atlassianUser, $jiraService);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
         }
-
-        $tokenData = $response->json();
-
-        $userResponse = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $tokenData['access_token'],
-        ])->get('https://api.atlassian.com/me');
-
-        $atlassianUserData = $userResponse->json();
-
-        $atlassianUser = new \stdClass();
-        $atlassianUser->id = $atlassianUserData['account_id'];
-        $atlassianUser->name = $atlassianUserData['name'] ?? null;
-        $atlassianUser->nickname = $atlassianUserData['email'];
-        $atlassianUser->email = $atlassianUserData['email'];
-        $atlassianUser->avatar = $atlassianUserData['picture'];
-        $atlassianUser->token = $tokenData['access_token'];
-        $atlassianUser->refreshToken = $tokenData['refresh_token'] ?? null;
-        $atlassianUser->expiresIn = $tokenData['expires_in'] ?? 3600;
-
-        return $this->processUser($atlassianUser, $jiraService);
     }
 
     protected function processUser($atlassianUser, JiraService $jiraService)

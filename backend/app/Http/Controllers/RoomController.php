@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreRoomRequest;
 use App\Models\Room;
 use App\Models\RoomParticipant;
 use Illuminate\Http\Request;
@@ -32,12 +33,8 @@ class RoomController extends Controller
         });
     }
 
-    public function store(Request $request)
+    public function store(StoreRoomRequest $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-        ]);
-
         $user = $request->user();
         
         if (!$user) {

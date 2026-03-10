@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\IssueAdded;
+use App\Http\Requests\StoreIssueRequest;
 use App\Models\Issue;
 use App\Models\Room;
 use App\Services\JiraService;
@@ -10,12 +12,8 @@ use Illuminate\Support\Str;
 
 class IssueController extends Controller
 {
-    public function storeFromUrl(Request $request, string $uuid)
+    public function storeFromUrl(StoreIssueRequest $request, string $uuid)
     {
-        $request->validate([
-            'url' => 'required|string|url',
-        ]);
-
         $room = Room::where('uuid', $uuid)->firstOrFail();
         $user = $request->user();
 

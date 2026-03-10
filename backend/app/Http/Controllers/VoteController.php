@@ -8,6 +8,7 @@ use App\Events\VoteCast;
 use App\Events\VotesRevealed;
 use App\Events\VotingReset;
 use App\Events\VotingStarted;
+use App\Http\Requests\VoteRequest;
 use App\Models\Issue;
 use App\Models\Room;
 use App\Models\Vote;
@@ -17,12 +18,8 @@ use Illuminate\Support\Facades\Auth;
 
 class VoteController extends Controller
 {
-    public function castVote(Request $request, string $uuid, int $issueId)
+    public function castVote(VoteRequest $request, string $uuid, int $issueId)
     {
-        $request->validate([
-            'value' => 'required|string',
-        ]);
-
         $room = Room::where('uuid', $uuid)->firstOrFail();
         $issue = Issue::where('id', $issueId)
             ->where('room_id', $room->id)

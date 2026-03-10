@@ -14,9 +14,7 @@ export const useAuthStore = defineStore("auth", () => {
 
     loading.value = true;
     try {
-      console.log("authStore: fetching user from API...");
       const response = await api.get("/api/user");
-      console.log("authStore: user response:", response.data);
       user.value = response.data;
       localStorage.setItem("user", JSON.stringify(response.data));
     } catch (error) {
@@ -31,7 +29,6 @@ export const useAuthStore = defineStore("auth", () => {
   }
 
   function setAuth(userData, authToken) {
-    console.log("authStore: setting auth:", userData);
     user.value = userData;
     token.value = authToken;
     localStorage.setItem("user", JSON.stringify(userData));

@@ -16,15 +16,11 @@ onMounted(async () => {
 
   if (code) {
     try {
-      console.log("Getting CSRF token...");
       await api.get("/sanctum/csrf-cookie");
-      console.log("CSRF token obtained, making API call...");
 
       const response = await api.post("/api/auth/jira/callback", { code, state });
-      console.log("API response:", response.data);
 
       if (response.data.user && response.data.token) {
-        console.log("Setting user and token in store:", response.data.user);
         authStore.setAuth(response.data.user, response.data.token);
       } else if (response.data.user) {
         // Fallback for session auth if token is missing (shouldn't happen with new backend)
@@ -32,11 +28,9 @@ onMounted(async () => {
         authStore.user = response.data.user;
       }
 
-      console.log("Waiting a bit...");
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       await router.push("/dashboard");
-      console.log("Redirecting to dashboard...");
     } catch (error) {
       console.error("Auth error:", error);
       console.error("Error response:", error.response?.data);
@@ -59,7 +53,7 @@ onMounted(async () => {
       <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#fdfc04] mx-auto mb-6"></div>
       <p class="text-[#fdfc04] font-display text-xl tracking-widest uppercase mb-2">Signing you in...</p>
       <p class="text-xs text-gray-400 font-sans uppercase tracking-wider">Please wait</p>
-      
+
       <!-- Corner decorations -->
       <div class="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#fdfc04]"></div>
       <div class="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#fdfc04]"></div>

@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\Log;
 
 class JiraService
 {
+    private const AUTH_URL = 'https://auth.atlassian.com/oauth/token';
+    private const API_URL = 'https://api.atlassian.com';
+
     private ?User $user;
     private string $baseUrl;
 
@@ -16,10 +19,43 @@ class JiraService
         $this->user = $user;
         
         if ($user && $user->jira_cloud_id) {
-            $this->baseUrl = "https://api.atlassian.com/ex/jira/{$user->jira_cloud_id}/rest/api/3";
+            $this->baseUrl = self::API_URL . "/ex/jira/{$user->jira_cloud_id}/rest/api/3";
         } else {
             $this->baseUrl = '';
         }
+    }
+
+    public function exchangeCodeForToken(string $code): array
+    {
+        $response = Http::asForm()->post(self::AUTH_URL, [
+            'grant_type' => 'authorization_code',
+            'client_id' => config('services.atlassian.client_id'),
+            'client_secret' => config('services.atlassian.client_secret'),
+            'code' => $code,
+            'redirect_uri' => config('services.atlassian.redirect'),
+        ]);
+
+        if ($response->failed()) {
+            Log::error('Jira Token Exchange Failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+                'sent_redirect_uri' => config('services.atlassian.redirect'),
+            ]);
+            throw new \Exception('Failed to get token from Atlassian: ' . $response->body());
+        }
+
+        return $response->json();
+    }
+
+    public function getAtlassianUser(string $accessToken): array
+    {
+        $response = Http::withToken($accessToken)->get(self::API_URL . '/me');
+
+        if ($response->failed()) {
+            throw new \Exception('Failed to get user from Atlassian');
+        }
+
+        return $response->json();
     }
 
     public function getAccessibleResources(string $accessToken): array
@@ -27,7 +63,13 @@ class JiraService
         $response = Http::withHeaders([
             'Authorization' => 'Bearer ' . $accessToken,
             'Accept' => 'application/json',
-        ])->get('https://api.atlassian.com/oauth/token/accessible-resources');
+        ])->get(self::AUTH_URL . '/accessible-resources');
+
+        // Note: accessible-resources endpoint is actually at api.atlassian.com/oauth/token/accessible-resources
+        // Let's fix the URL usage in getAccessibleResources to be correct
+        $response = Http::withToken($accessToken)
+            ->withHeaders(['Accept' => 'application/json'])
+            ->get(self::API_URL . '/oauth/token/accessible-resources');
 
         Log::info('Accessible resources response', [
             'status' => $response->status(),
@@ -40,7 +82,7 @@ class JiraService
     public function setUser(User $user): self
     {
         $this->user = $user;
-        $this->baseUrl = "https://api.atlassian.com/ex/jira/{$user->jira_cloud_id}/rest/api/3";
+        $this->baseUrl = self::API_URL . "/ex/jira/{$user->jira_cloud_id}/rest/api/3";
         
         return $this;
     }
@@ -153,10 +195,10 @@ class JiraService
         }
 
         try {
-            $response = Http::asForm()->post('https://auth.atlassian.com/oauth/token', [
+            $response = Http::asForm()->post(self::AUTH_URL, [
                 'grant_type' => 'refresh_token',
-                'client_id' => config('services.jira.client_id'),
-                'client_secret' => config('services.jira.client_secret'),
+                'client_id' => config('services.atlassian.client_id'),
+                'client_secret' => config('services.atlassian.client_secret'),
                 'refresh_token' => $this->user->jira_refresh_token,
             ]);
 

@@ -16,7 +16,8 @@ git pull origin main
 # 2. Backend Kurulumu
 echo "🐘 Backend bağımlılıkları yükleniyor..."
 cd backend
-composer install --no-dev --optimize-autoloader
+# PHP sürüm uyumsuzluğunu önlemek için update kullanıyoruz
+composer update --no-dev --optimize-autoloader
 
 echo "🗄️ Veritabanı migrate ediliyor..."
 php artisan migrate --force

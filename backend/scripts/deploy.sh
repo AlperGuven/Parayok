@@ -35,13 +35,14 @@ cd ../frontend
 # Backend .env dosyasından Reverb App Key'i al
 REVERB_APP_KEY=$(grep REVERB_APP_KEY ../backend/.env | cut -d '=' -f2)
 
-# Frontend için .env dosyası oluştur (Vite bazen environment variable'ları göremeyebilir)
-echo "📝 Frontend .env dosyası oluşturuluyor..."
-cat > .env <<EOF
+# Frontend için .env.production dosyası oluştur
+echo "📝 Frontend .env.production dosyası oluşturuluyor..."
+rm -f .env .env.production # Eski dosyaları temizle
+cat > .env.production <<EOF
 VITE_REVERB_APP_KEY=$REVERB_APP_KEY
-VITE_REVERB_HOST=parayok.space
-VITE_REVERB_PORT=443
-VITE_REVERB_SCHEME=https
+VITE_REVERB_HOST="parayok.space"
+VITE_REVERB_PORT="443"
+VITE_REVERB_SCHEME="https"
 EOF
 
 # Build al

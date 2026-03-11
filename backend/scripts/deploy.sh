@@ -31,8 +31,16 @@ php artisan view:cache
 # 3. Frontend Build ve Taşıma
 echo "🎨 Frontend build ediliyor..."
 cd ../frontend
-npm install
-npm run build
+
+# Backend .env dosyasından Reverb App Key'i al
+REVERB_APP_KEY=$(grep REVERB_APP_KEY ../backend/.env | cut -d '=' -f2)
+
+# Ortam değişkenleri ile build al
+VITE_REVERB_APP_KEY=$REVERB_APP_KEY \
+VITE_REVERB_HOST="parayok.space" \
+VITE_REVERB_PORT="443" \
+VITE_REVERB_SCHEME="https" \
+npm install && npm run build
 
 echo "🚚 Build dosyaları backend'e taşınıyor..."
 # Backend public temizliği (eski build dosyaları)

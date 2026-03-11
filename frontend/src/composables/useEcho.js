@@ -13,14 +13,15 @@ export function useEcho() {
       return echo.value
     }
 
-    echo.value = new Echo({
+    const config = {
       broadcaster: 'reverb',
       key: import.meta.env.VITE_REVERB_APP_KEY || 'parayok-key',
-      wsHost: import.meta.env.VITE_REVERB_HOST || 'localhost',
+      wsHost: import.meta.env.VITE_REVERB_HOST || window.location.hostname,
       wsPort: import.meta.env.VITE_REVERB_PORT || 8080,
       wssPort: import.meta.env.VITE_REVERB_PORT || 8080,
       forceTLS: (import.meta.env.VITE_REVERB_SCHEME || 'http') === 'https',
       enabledTransports: ['ws', 'wss'],
+      disableStats: true, // Disable stats
       auth: {
         headers: {
           'Content-Type': 'application/json',
@@ -28,7 +29,15 @@ export function useEcho() {
         },
       },
       ...options,
-    })
+    };
+
+    console.log('Echo Config:', config); // Debug connection
+
+    echo.value = new Echo(config);
+
+    echo.value.connector.pusher.connection.bind('state_change', (states) => {
+       console.log('Echo State Change:', states);
+    });
 
     echo.value.connector.pusher.connection.bind('connected', () => {
       isConnected.value = true

@@ -21,8 +21,12 @@ async function createRoom() {
   error.value = "";
 
   try {
-    const response = await api.post("/api/rooms", { name: roomName.value });
-    router.push(`/room/${response.data.uuid}`);
+    const response = await api.post("/api/rooms", { 
+      name: roomName.value,
+      voting_system: "fibonacci" // Default voting system
+    });
+    const uuid = response.data.uuid; // Use UUID from response
+    router.push(`/room/${uuid}`);
   } catch (e: any) {
     error.value = e.response?.data?.message || "Failed to create room";
   } finally {

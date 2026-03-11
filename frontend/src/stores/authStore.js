@@ -35,6 +35,20 @@ export const useAuthStore = defineStore("auth", () => {
     localStorage.setItem("token", authToken);
   }
 
+  async function loginAsGuest(displayName) {
+    loading.value = true;
+    try {
+      const response = await api.post("/api/auth/guest/login", { display_name: displayName });
+      setAuth(response.data.user, response.data.token);
+      return true;
+    } catch (error) {
+      console.error("Failed to login as guest:", error);
+      throw error;
+    } finally {
+      loading.value = false;
+    }
+  }
+
   function logout() {
     user.value = null;
     token.value = null;
@@ -48,6 +62,7 @@ export const useAuthStore = defineStore("auth", () => {
     loading,
     isAuthenticated,
     fetchUser,
+    loginAsGuest,
     setAuth,
     logout,
   };

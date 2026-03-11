@@ -222,6 +222,10 @@ const isCreator = computed(() => {
   return room.value && authStore.user && room.value.created_by === authStore.user.id;
 });
 
+const isGuest = computed(() => {
+  return authStore.user && authStore.user.is_guest;
+});
+
 async function reopenRoom() {
   if (!room.value) return;
   try {
@@ -275,6 +279,7 @@ async function reopenRoom() {
               @click="showAddIssue = true"
               class="text-md text-[#00fbff] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider font-bold"
               :disabled="room?.status === 'completed'"
+              v-if="!isGuest"
             >
               + ADD
             </button>
@@ -381,7 +386,7 @@ async function reopenRoom() {
           <div class="mb-12">
             <div class="flex items-center justify-between mb-8">
               <h3 class="text-xl font-display font-bold text-[#fdfc04] uppercase tracking-widest">Estimation</h3>
-              <div class="flex gap-4">
+              <div class="flex gap-4" v-if="!isGuest">
                 <button
                   v-if="selectedIssue.status === 'pending'"
                   @click="startVoting"
@@ -493,7 +498,7 @@ async function reopenRoom() {
         </div>
 
         <button
-          v-if="room?.status !== 'completed'"
+          v-if="room?.status !== 'completed' && !isGuest"
           @click="finishRoom"
           class="absolute bottom-8 right-8 px-8 py-4 bg-red-900/80 border border-red-500 text-red-100 hover:bg-red-800 hover:text-white shadow-lg font-bold tracking-widest uppercase font-display transition-all z-20"
         >

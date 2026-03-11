@@ -22,6 +22,7 @@ class User extends Authenticatable
         'jira_site_url',
         'jira_story_points_field_id',
         'token_expires_at',
+        'is_guest',
     ];
 
     protected $hidden = [

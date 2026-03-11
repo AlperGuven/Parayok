@@ -1,10 +1,13 @@
 <?php
 
 use App\Http\Controllers\Auth\JiraAuthController;
+use App\Http\Controllers\GuestLoginController;
 use App\Http\Controllers\IssueController;
 use App\Http\Controllers\RoomController;
 use App\Http\Controllers\VoteController;
 use Illuminate\Support\Facades\Route;
+
+Route::post('/auth/guest/login', [GuestLoginController::class, 'login']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [JiraAuthController::class, 'user']);

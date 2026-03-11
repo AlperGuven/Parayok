@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/authStore";
 import api from "@/services/api";
@@ -12,6 +12,11 @@ const showGuestForm = ref(false);
 const guestName = ref("");
 const loading = ref(false);
 const error = ref("");
+
+// Only show guest login if there is a redirect URL (meaning user is trying to join a room)
+const hasRedirect = computed(() => {
+  return !!router.currentRoute.value.query.redirect;
+});
 
 async function loginWithJira() {
   try {
@@ -63,6 +68,7 @@ async function joinAsGuest() {
         </button>
         
         <button
+          v-if="hasRedirect"
           @click="showGuestForm = true"
           class="w-full py-3 px-4 border border-[#fdfc04] text-[#fdfc04] hover:bg-[#fdfc04] hover:text-[#041628] transition-colors font-bold tracking-widest uppercase font-display"
         >

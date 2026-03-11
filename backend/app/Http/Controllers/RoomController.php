@@ -18,6 +18,10 @@ class RoomController extends Controller
             return [];
         }
 
+        if ($user->is_guest) {
+            return response()->json(['message' => 'Guests cannot access dashboard'], 403);
+        }
+
         $rooms = Room::whereHas('participants', function ($query) use ($user) {
             $query->where('users.id', $user->id);
         })->withCount('participants')->get();
@@ -39,6 +43,10 @@ class RoomController extends Controller
         
         if (!$user) {
             return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        if ($user->is_guest) {
+            return response()->json(['message' => 'Guests cannot create rooms'], 403);
         }
 
         $room = Room::create([

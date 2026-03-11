@@ -16,7 +16,7 @@ class GuestLoginController extends Controller
 
         // Create a guest user
         $user = User::create([
-            'name' => $request->display_name,
+            'display_name' => $request->display_name,
             'is_guest' => true,
             // email and jira_account_id are nullable now
         ]);
@@ -28,7 +28,7 @@ class GuestLoginController extends Controller
             'token' => $token,
             'user' => [
                 'id' => $user->id,
-                'name' => $user->name,
+                'name' => $user->display_name,
                 'is_guest' => true,
                 'avatar' => null, // Guests don't have avatars initially
             ],

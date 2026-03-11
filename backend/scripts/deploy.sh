@@ -5,8 +5,9 @@ set -e
 
 echo "🚀 Deploy başlatılıyor..."
 
-# Proje ana dizinine git
-cd /var/www/html/parayok
+# Scriptin bulunduğu dizini referans alarak proje köküne git (backend/scripts/.. -> backend -> .. -> root)
+cd "$(dirname "$0")/../.."
+echo "📂 Çalışma dizini: $(pwd)"
 
 # 1. Kodları Güncelle
 echo "📥 Git pull yapılıyor..."

@@ -25,7 +25,7 @@ const cards = ["1", "2", "3", "5", "8", "13", "21", "?", "☕"];
 onMounted(async () => {
   await authStore.fetchUser();
   if (!authStore.isAuthenticated) {
-    router.push("/");
+    router.push({ path: "/", query: { redirect: route.fullPath } });
     return;
   }
   await fetchRoom();

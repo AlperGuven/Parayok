@@ -117,7 +117,24 @@ async function fetchRoom() {
       selectedIssue.value = room.value.issues[0];
     }
   } catch (e) {
-    error.value = e.response?.data?.message || "Failed to load room";
+    // If user is not a participant, try to join
+    if (e.response?.status === 403 && e.response?.data?.message === 'You are not a participant of this room') {
+      try {
+        await api.post(`/api/rooms/${route.params.uuid}/join`);
+        // Retry fetching room after joining
+        const response = await api.get(`/api/rooms/${route.params.uuid}`);
+        room.value = response.data;
+        if (room.value.issues.length > 0) {
+          selectedIssue.value = room.value.issues[0];
+        }
+        return;
+      } catch (joinError) {
+        console.error("Failed to join room:", joinError);
+        error.value = "Failed to join room";
+      }
+    } else {
+      error.value = e.response?.data?.message || "Failed to load room";
+    }
   } finally {
     loading.value = false;
   }
@@ -246,10 +263,10 @@ async function reopenRoom() {
     <div v-else-if="error" class="flex flex-col items-center justify-center min-h-screen">
       <div class="text-red-500 mb-4 font-sans">{{ error }}</div>
       <button
-        @click="router.push('/dashboard')"
+        @click="isGuest ? router.push('/') : router.push('/dashboard')"
         class="text-[#fdfc04] hover:text-white transition-colors font-sans uppercase tracking-wider"
       >
-        BACK TO DASHBOARD
+        {{ isGuest ? 'EXIT' : 'BACK TO DASHBOARD' }}
       </button>
     </div>
 

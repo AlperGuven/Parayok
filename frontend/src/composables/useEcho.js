@@ -39,6 +39,11 @@ export function useEcho() {
        console.log('Echo State Change:', states);
     });
 
+    // Debug all events
+    echo.value.connector.pusher.bind_global((eventName, data) => {
+      console.log('Global Event:', eventName, data);
+    });
+
     echo.value.connector.pusher.connection.bind('connected', () => {
       isConnected.value = true
     })

@@ -46,7 +46,7 @@ function setupEcho() {
 
   const roomChannel = channel(room.value.id);
 
-  roomChannel.listen("vote.cast", (data) => {
+  roomChannel.listen(".vote.cast", (data) => {
     if (data.issue_id === selectedIssue.value?.id) {
       if (data.has_voted && !votedUsers.value.find((u) => u.user_id === data.user_id)) {
         votedUsers.value.push({
@@ -58,14 +58,14 @@ function setupEcho() {
     }
   });
 
-  roomChannel.listen("voting.started", (data) => {
+  roomChannel.listen(".voting.started", (data) => {
     if (selectedIssue.value && data.issue_id === selectedIssue.value.id) {
       selectedIssue.value.status = "voting";
       votedUsers.value = [];
     }
   });
 
-  roomChannel.listen("votes.revealed", (data) => {
+  roomChannel.listen(".votes.revealed", (data) => {
     if (selectedIssue.value && data.issue_id === selectedIssue.value.id) {
       selectedIssue.value.status = "revealed";
       selectedIssue.value.final_score = data.final_score;
@@ -73,7 +73,7 @@ function setupEcho() {
     }
   });
 
-  roomChannel.listen("voting.reset", (data) => {
+  roomChannel.listen(".voting.reset", (data) => {
     if (selectedIssue.value && data.issue_id === selectedIssue.value.id) {
       selectedIssue.value.status = "pending";
       selectedIssue.value.final_score = null;
@@ -240,7 +240,8 @@ const isCreator = computed(() => {
 });
 
 const isGuest = computed(() => {
-  return authStore.user && authStore.user.is_guest;
+  // Ensure user exists and check is_guest property
+  return !!(authStore.user && authStore.user.is_guest);
 });
 
 async function reopenRoom() {

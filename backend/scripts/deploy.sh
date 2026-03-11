@@ -1,86 +1,61 @@
 #!/bin/bash
-
-# Parayok - Deployment Script for Single Server (1000 users)
-# Run as: sudo bash scripts/deploy.sh
+# Parayok - Deployment Script
+# Kullanım: sudo bash /var/www/html/parayok/backend/scripts/deploy.sh
 
 set -e
 
-echo "=== Parayok Deployment Script ==="
-echo "Target: 1000 concurrent users"
-echo ""
-
-# Colors
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
+RED='\033[0;31m'
 NC='\033[0m'
 
-# Check if running as root
+PROJECT_DIR="/var/www/html/parayok/backend"
+
 if [ "$EUID" -ne 0 ]; then
-    echo -e "${YELLOW}Please run as root or with sudo${NC}"
+    echo -e "${RED}sudo ile çalıştır${NC}"
     exit 1
 fi
 
-# Navigate to project directory
-cd /var/www/html/parayok/backend
+cd "$PROJECT_DIR"
 
-# Optimize server limits
-echo -e "${GREEN}[1/8] Optimizing server limits...${NC}"
-bash ../scripts/optimize-server.sh
+echo -e "${GREEN}[1/9] Pulling latest code...${NC}"
+sudo -u www-data git pull origin main
 
-# Install Redis if not installed
-echo -e "${GREEN}[2/8] Checking Redis...${NC}"
-systemctl status redis-server > /dev/null 2>&1 || apt-get install -y redis-server
+echo -e "${GREEN}[2/9] Installing PHP dependencies...${NC}"
+sudo -u www-data composer install --no-dev --optimize-autoloader --no-interaction
 
-# Install Supervisor if not installed
-echo -e "${GREEN}[3/8] Checking Supervisor...${NC}"
-systemctl status supervisor > /dev/null 2>&1 || apt-get install -y supervisor
+echo -e "${GREEN}[3/9] Installing & building frontend...${NC}"
+sudo -u www-data npm ci
+sudo -u www-data npm run build
 
-# Copy Supervisor config
-echo -e "${GREEN}[4/8] Configuring Supervisor...${NC}"
-cp storage/supervisor.conf /etc/supervisor/conf.d/parayok.conf
-supervisorctl reread
-supervisorctl update
+echo -e "${GREEN}[4/9] Running migrations...${NC}"
+sudo -u www-data php artisan migrate --force
 
-# Setup cron jobs
-echo -e "${GREEN}[5/8] Setting up cron jobs...${NC}"
-bash ../scripts/setup-crons.sh
+echo -e "${GREEN}[5/9] Caching config...${NC}"
+sudo -u www-data php artisan config:cache
+sudo -u www-data php artisan route:cache
+sudo -u www-data php artisan view:cache
+sudo -u www-data php artisan event:cache
 
-# Run MySQL performance optimizations
-echo -e "${GREEN}[6/8] Running MySQL optimizations...${NC}"
-mysql -u root -p < database/performance.sql 2>/dev/null || echo "Skipping MySQL optimization (may require password)"
+echo -e "${GREEN}[6/9] Restarting queue workers...${NC}"
+sudo -u www-data php artisan queue:restart
 
-# Install Composer dependencies
-echo -e "${GREEN}[7/8] Installing dependencies...${NC}"
-composer install --no-dev --optimize-autoloader
+echo -e "${GREEN}[7/9] Restarting Reverb...${NC}"
+supervisorctl restart parayok-reverb
 
-# Run migrations
-echo -e "${GREEN}[8/8] Running migrations...${NC}"
-php artisan migrate --force
+echo -e "${GREEN}[8/9] Restarting PHP-FPM...${NC}"
+systemctl restart php8.3-fpm
 
-# Clear and rebuild cache
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-
-# Start services
-echo -e "${GREEN}Starting services...${NC}"
-supervisorctl start parayok-worker
-supervisorctl start parayok-reverb
-
-# Restart PHP-FPM
-systemctl restart php*-fpm
-
-# Restart Nginx
-systemctl restart nginx
+echo -e "${GREEN}[9/9] Reloading Nginx...${NC}"
+systemctl reload nginx
 
 echo ""
-echo -e "${GREEN}=== Deployment Complete! ===${NC}"
+echo -e "${GREEN}=== Deploy Complete! ===${NC}"
 echo ""
 echo "Services:"
 supervisorctl status
 echo ""
-echo "Memory usage:"
+echo "Memory:"
 free -h
 echo ""
-echo "Open files limit:"
-ulimit -n
+echo "Disk:"
+df -h /

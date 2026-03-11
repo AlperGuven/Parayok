@@ -482,7 +482,14 @@ async function reopenRoom() {
           <div class="w-16 h-16 border border-gray-700 rotate-45 flex items-center justify-center mb-4">
             <div class="w-12 h-12 border border-gray-700"></div>
           </div>
-          <p class="font-display tracking-widest uppercase">SELECT AN ISSUE TO START</p>
+          <p class="font-display tracking-widest uppercase mb-8">SELECT AN ISSUE TO START</p>
+          
+          <button
+            @click="router.push('/dashboard')"
+            class="px-6 py-3 border border-gray-700 text-gray-400 hover:text-[#fdfc04] hover:border-[#fdfc04] transition-all uppercase tracking-widest font-sans font-bold"
+          >
+            EXIT ROOM
+          </button>
         </div>
 
         <button

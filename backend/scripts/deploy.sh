@@ -1,61 +1,47 @@
 #!/bin/bash
-# Parayok - Deployment Script
-# Kullanım: sudo bash /var/www/html/parayok/backend/scripts/deploy.sh
 
+# Hata durumunda durdur
 set -e
 
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-NC='\033[0m'
+echo "🚀 Deploy başlatılıyor..."
 
-PROJECT_DIR="/var/www/html/parayok/backend"
+# Proje ana dizinine git
+cd /var/www/html/parayok
 
-if [ "$EUID" -ne 0 ]; then
-    echo -e "${RED}sudo ile çalıştır${NC}"
-    exit 1
-fi
+# 1. Kodları Güncelle
+echo "📥 Git pull yapılıyor..."
+git pull origin main
 
-cd "$PROJECT_DIR"
+# 2. Backend Kurulumu
+echo "🐘 Backend bağımlılıkları yükleniyor..."
+cd backend
+composer install --no-dev --optimize-autoloader
 
-echo -e "${GREEN}[1/9] Pulling latest code...${NC}"
-sudo -u www-data git pull origin main
+echo "🗄️ Veritabanı migrate ediliyor..."
+php artisan migrate --force
 
-echo -e "${GREEN}[2/9] Installing PHP dependencies...${NC}"
-sudo -u www-data composer install --no-dev --optimize-autoloader --no-interaction
+echo "🧹 Cache temizleniyor..."
+php artisan optimize:clear
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
 
-echo -e "${GREEN}[3/9] Installing & building frontend...${NC}"
-sudo -u www-data npm ci
-sudo -u www-data npm run build
+# 3. Frontend Build ve Taşıma
+echo "🎨 Frontend build ediliyor..."
+cd ../frontend
+npm install
+npm run build
 
-echo -e "${GREEN}[4/9] Running migrations...${NC}"
-sudo -u www-data php artisan migrate --force
+echo "🚚 Build dosyaları backend'e taşınıyor..."
+# Backend public temizliği (eski build dosyaları)
+rm -rf ../backend/public/assets
+rm -f ../backend/public/index.html
 
-echo -e "${GREEN}[5/9] Caching config...${NC}"
-sudo -u www-data php artisan config:cache
-sudo -u www-data php artisan route:cache
-sudo -u www-data php artisan view:cache
-sudo -u www-data php artisan event:cache
+# Yeni dosyaları kopyala
+cp -r dist/assets ../backend/public/
+cp dist/index.html ../backend/public/
 
-echo -e "${GREEN}[6/9] Restarting queue workers...${NC}"
-sudo -u www-data php artisan queue:restart
+# Favicon vb. diğer statik dosyalar varsa onları da kopyala (opsiyonel)
+# cp dist/favicon.ico ../backend/public/
 
-echo -e "${GREEN}[7/9] Restarting Reverb...${NC}"
-supervisorctl restart parayok-reverb
-
-echo -e "${GREEN}[8/9] Restarting PHP-FPM...${NC}"
-systemctl restart php8.3-fpm
-
-echo -e "${GREEN}[9/9] Reloading Nginx...${NC}"
-systemctl reload nginx
-
-echo ""
-echo -e "${GREEN}=== Deploy Complete! ===${NC}"
-echo ""
-echo "Services:"
-supervisorctl status
-echo ""
-echo "Memory:"
-free -h
-echo ""
-echo "Disk:"
-df -h /
+echo "✅ Deploy başarıyla tamamlandı! (https://parayok.space)"

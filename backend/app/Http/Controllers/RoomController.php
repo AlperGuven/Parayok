@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\ParticipantJoined;
+use App\Events\ParticipantLeft;
 use App\Http\Requests\StoreRoomRequest;
 use App\Models\Room;
 use App\Models\RoomParticipant;
@@ -132,15 +134,18 @@ class RoomController extends Controller
 
         if ($existingParticipant) {
             $existingParticipant->update(['is_online' => true]);
+            ParticipantJoined::dispatch($existingParticipant);
             return response()->json(['message' => 'Already joined']);
         }
 
-        RoomParticipant::create([
+        $participant = RoomParticipant::create([
             'room_id' => $room->id,
             'user_id' => $user->id,
             'role' => 'voter',
             'is_online' => true,
         ]);
+
+        ParticipantJoined::dispatch($participant);
 
         return response()->json(['message' => 'Joined successfully']);
     }
@@ -156,7 +161,7 @@ class RoomController extends Controller
 
         if ($participant) {
             $participant->update(['is_online' => false]);
-            // Optional: Broadcast UserLeft event
+            ParticipantLeft::dispatch($room->id, $user->id);
         }
 
         return response()->json(['message' => 'Left successfully']);

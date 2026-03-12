@@ -19,6 +19,7 @@ const showAddIssue = ref(false);
 const newIssueUrl = ref("");
 const votedUsers = ref([]);
 const revealedVotes = ref([]);
+const isCopied = ref(false);
 
 const cards = ["1", "2", "3", "5", "8", "13", "21", "?", "☕"];
 
@@ -83,7 +84,7 @@ function setupEcho() {
     }
   });
 
-  roomChannel.listen("issue.added", (data) => {
+  roomChannel.listen(".issue.added", (data) => {
     room.value.issues.push({
       id: data.id,
       jira_issue_key: data.jira_issue_key,
@@ -94,17 +95,28 @@ function setupEcho() {
     });
   });
 
-  roomChannel.listen("participant.joined", (data) => {
+  roomChannel.listen(".participant.joined", (data) => {
     const exists = room.value.participants.find((p) => p.user_id === data.user_id);
     if (!exists) {
       room.value.participants.push({
-        id: Date.now(),
+        id: Date.now(), // Temporary ID
         user_id: data.user_id,
         display_name: data.display_name,
         avatar_url: data.avatar_url,
         role: data.role,
         is_online: true,
       });
+    } else {
+      exists.is_online = true;
+    }
+  });
+
+  roomChannel.listen(".participant.left", (data) => {
+    const participant = room.value.participants.find((p) => p.user_id === data.user_id);
+    if (participant) {
+      participant.is_online = false;
+      // Optional: remove from list after some time or immediately
+      // room.value.participants = room.value.participants.filter(p => p.user_id !== data.user_id);
     }
   });
 }
@@ -229,6 +241,10 @@ function copyRoomLink() {
   if (!room.value) return;
   const link = `${window.location.origin}/room/${room.value.uuid}`;
   navigator.clipboard.writeText(link);
+  isCopied.value = true;
+  setTimeout(() => {
+    isCopied.value = false;
+  }, 2000);
 }
 
 function getVotesForCard(card) {
@@ -303,7 +319,7 @@ async function reopenRoom() {
               @click="copyRoomLink"
               class="text-xs text-gray-400 hover:text-[#fdfc04] transition-colors uppercase tracking-wider"
             >
-              COPY LINK
+              {{ isCopied ? 'COPIED!' : 'COPY LINK' }}
             </button>
           </div>
         </div>

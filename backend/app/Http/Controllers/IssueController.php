@@ -54,6 +54,8 @@ class IssueController extends Controller
             'added_by' => $user->id,
         ]);
 
+        IssueAdded::dispatch($issue, $user);
+
         return response()->json([
             'id' => $issue->id,
             'jira_issue_key' => $issue->jira_issue_key,

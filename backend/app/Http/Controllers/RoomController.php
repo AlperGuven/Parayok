@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Events\ParticipantJoined;
 use App\Events\ParticipantLeft;
+use App\Events\RoomDeleted;
 use App\Http\Requests\StoreRoomRequest;
 use App\Models\Room;
 use App\Models\RoomParticipant;
@@ -216,7 +217,10 @@ class RoomController extends Controller
             return response()->json(['message' => 'Only moderator can delete the room'], 403);
         }
 
+        $roomId = $room->id;
         $room->delete();
+
+        RoomDeleted::dispatch($roomId);
 
         return response()->json(['message' => 'Room deleted']);
     }

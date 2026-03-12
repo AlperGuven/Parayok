@@ -115,9 +115,12 @@ function setupEcho() {
     const participant = room.value.participants.find((p) => p.user_id === data.user_id);
     if (participant) {
       participant.is_online = false;
-      // Optional: remove from list after some time or immediately
-      // room.value.participants = room.value.participants.filter(p => p.user_id !== data.user_id);
     }
+  });
+
+  roomChannel.listen(".room.deleted", () => {
+    alert("This room has been deleted by the moderator.");
+    exitRoom();
   });
 }
 

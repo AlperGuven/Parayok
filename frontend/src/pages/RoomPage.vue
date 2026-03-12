@@ -98,13 +98,14 @@ function setupEcho() {
   });
 
   roomChannel.listen(".issue.added", (data) => {
+    console.log("Issue Added Event:", data); // DEBUG
     const exists = room.value.issues.find(i => i.id === data.id);
     if (!exists) {
       room.value.issues.push({
         id: data.id,
         jira_issue_key: data.jira_issue_key,
         summary: data.summary,
-        description: data.description,
+        description: data.description, // Ensure this is present
         jira_url: data.jira_url,
         status: "pending",
         final_score: null,
@@ -113,10 +114,11 @@ function setupEcho() {
   });
 
   roomChannel.listen(".participant.joined", (data) => {
+    console.log("Participant Joined Event:", data); // DEBUG
     const exists = room.value.participants.find((p) => p.user_id === data.user_id);
     if (!exists) {
       room.value.participants.push({
-        id: Date.now(), // Temporary ID
+        id: Date.now(),
         user_id: data.user_id,
         display_name: data.display_name,
         avatar_url: data.avatar_url,
@@ -129,6 +131,8 @@ function setupEcho() {
   });
 
   roomChannel.listen(".participant.left", (data) => {
+    console.log("Participant Left Event:", data); // DEBUG
+    // Force reactivity by creating new array
     room.value.participants = room.value.participants.filter(p => p.user_id !== data.user_id);
   });
 

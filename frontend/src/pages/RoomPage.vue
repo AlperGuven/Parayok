@@ -45,7 +45,12 @@ function setupEcho() {
   const echoInstance = connect();
   window.echoInstance = echoInstance;
 
-  const roomChannel = channel(room.value.id);
+  const channelName = 'room.' + room.value.id;
+  
+  // Clean up existing listeners if any
+  echoInstance.leaveChannel(channelName);
+
+  const roomChannel = echoInstance.channel(channelName);
 
   roomChannel.listen(".vote.cast", (data) => {
     if (data.issue_id === selectedIssue.value?.id) {
@@ -93,15 +98,18 @@ function setupEcho() {
   });
 
   roomChannel.listen(".issue.added", (data) => {
-    room.value.issues.push({
-      id: data.id,
-      jira_issue_key: data.jira_issue_key,
-      summary: data.summary,
-      description: data.description,
-      jira_url: data.jira_url,
-      status: "pending",
-      final_score: null,
-    });
+    const exists = room.value.issues.find(i => i.id === data.id);
+    if (!exists) {
+      room.value.issues.push({
+        id: data.id,
+        jira_issue_key: data.jira_issue_key,
+        summary: data.summary,
+        description: data.description,
+        jira_url: data.jira_url,
+        status: "pending",
+        final_score: null,
+      });
+    }
   });
 
   roomChannel.listen(".participant.joined", (data) => {
@@ -121,10 +129,7 @@ function setupEcho() {
   });
 
   roomChannel.listen(".participant.left", (data) => {
-    const participant = room.value.participants.find((p) => p.user_id === data.user_id);
-    if (participant) {
-      participant.is_online = false;
-    }
+    room.value.participants = room.value.participants.filter(p => p.user_id !== data.user_id);
   });
 
   roomChannel.listen(".room.deleted", () => {
@@ -151,6 +156,7 @@ async function fetchRoom() {
         if (room.value.issues.length > 0) {
           selectedIssue.value = room.value.issues[0];
         }
+        setupEcho();
         return;
       } catch (joinError) {
         console.error("Failed to join room:", joinError);

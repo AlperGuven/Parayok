@@ -37,6 +37,7 @@ class IssueAdded implements ShouldBroadcast
             'id' => $this->issue->id,
             'jira_issue_key' => $this->issue->jira_issue_key,
             'summary' => $this->issue->summary,
+            'description' => $this->issue->description,
             'jira_url' => $this->issue->jira_url,
             'added_by' => $this->addedBy->display_name,
         ];

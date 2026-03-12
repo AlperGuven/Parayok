@@ -60,7 +60,15 @@ function setupEcho() {
   });
 
   roomChannel.listen(".voting.started", (data) => {
-    if (selectedIssue.value && data.issue_id === selectedIssue.value.id) {
+    // Automatically switch to the issue being voted on if not selected
+    if (!selectedIssue.value || selectedIssue.value.id !== data.issue_id) {
+      const issueToSelect = room.value.issues.find(i => i.id === data.issue_id);
+      if (issueToSelect) {
+        selectedIssue.value = issueToSelect;
+      }
+    }
+    
+    if (selectedIssue.value && selectedIssue.value.id === data.issue_id) {
       selectedIssue.value.status = "voting";
       votedUsers.value = [];
     }
@@ -89,6 +97,7 @@ function setupEcho() {
       id: data.id,
       jira_issue_key: data.jira_issue_key,
       summary: data.summary,
+      description: data.description,
       jira_url: data.jira_url,
       status: "pending",
       final_score: null,

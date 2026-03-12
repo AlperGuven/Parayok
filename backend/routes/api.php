@@ -19,6 +19,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/rooms/{uuid}/leave', [RoomController::class, 'leave']);
     Route::post('/rooms/{uuid}/complete', [RoomController::class, 'complete']);
     Route::post('/rooms/{uuid}/reopen', [RoomController::class, 'reopen']);
+    Route::post('/rooms/{uuid}/delete', [RoomController::class, 'destroy']);
     Route::delete('/rooms/{uuid}', [RoomController::class, 'destroy']);
     Route::post('/rooms/{uuid}/issues/from-url', [IssueController::class, 'storeFromUrl']);
     Route::post('/rooms/{uuid}/issues/from-jql', [IssueController::class, 'storeFromJql']);

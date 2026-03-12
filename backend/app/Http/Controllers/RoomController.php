@@ -145,6 +145,23 @@ class RoomController extends Controller
         return response()->json(['message' => 'Joined successfully']);
     }
 
+    public function leave(Request $request, string $uuid)
+    {
+        $room = Room::where('uuid', $uuid)->firstOrFail();
+        $user = $request->user();
+
+        $participant = RoomParticipant::where('room_id', $room->id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if ($participant) {
+            $participant->update(['is_online' => false]);
+            // Optional: Broadcast UserLeft event
+        }
+
+        return response()->json(['message' => 'Left successfully']);
+    }
+
     public function complete(Request $request, string $uuid)
     {
         $room = Room::where('uuid', $uuid)->firstOrFail();

@@ -240,9 +240,27 @@ const isCreator = computed(() => {
 });
 
 const isGuest = computed(() => {
-  // Ensure user exists and check is_guest property
   return !!(authStore.user && authStore.user.is_guest);
 });
+
+async function exitRoom() {
+  console.log("Exiting room. isGuest:", isGuest.value, "User:", authStore.user);
+  
+  if (room.value) {
+    try {
+      await api.post(`/api/rooms/${room.value.uuid}/leave`);
+    } catch (e) {
+      console.error("Failed to leave room:", e);
+    }
+  }
+  
+  if (isGuest.value) {
+    authStore.logout();
+    window.location.href = "/";
+  } else {
+    router.push("/dashboard");
+  }
+}
 
 async function reopenRoom() {
   if (!room.value) return;
@@ -264,7 +282,7 @@ async function reopenRoom() {
     <div v-else-if="error" class="flex flex-col items-center justify-center min-h-screen">
       <div class="text-red-500 mb-4 font-sans">{{ error }}</div>
       <button
-        @click="isGuest ? router.push('/') : router.push('/dashboard')"
+        @click="exitRoom"
         class="text-[#fdfc04] hover:text-white transition-colors font-sans uppercase tracking-wider"
       >
         {{ isGuest ? 'EXIT' : 'BACK TO DASHBOARD' }}

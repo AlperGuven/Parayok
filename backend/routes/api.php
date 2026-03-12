@@ -16,6 +16,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/rooms', [RoomController::class, 'store']);
     Route::get('/rooms/{uuid}', [RoomController::class, 'show']);
     Route::post('/rooms/{uuid}/join', [RoomController::class, 'join']);
+    Route::post('/rooms/{uuid}/leave', [RoomController::class, 'leave']);
     Route::post('/rooms/{uuid}/complete', [RoomController::class, 'complete']);
     Route::post('/rooms/{uuid}/reopen', [RoomController::class, 'reopen']);
     Route::delete('/rooms/{uuid}', [RoomController::class, 'destroy']);

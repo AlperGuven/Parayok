@@ -35,6 +35,9 @@ onMounted(async () => {
 
 onUnmounted(() => {
   if (window.echoInstance) {
+    if (room.value) {
+      window.echoInstance.leave("room." + room.value.id);
+    }
     window.echoInstance.disconnect();
   }
 });
@@ -120,6 +123,8 @@ function setupEcho() {
       if (selectedIssue.value && selectedIssue.value.id === data.issue_id) {
         selectedIssue.value.status = "voting";
         votedUsers.value = [];
+        revealedVotes.value = [];
+        currentVote.value = null;
       }
     })
     .listen(".votes.revealed", (data) => {

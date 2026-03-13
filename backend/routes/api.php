@@ -6,6 +6,9 @@ use App\Http\Controllers\IssueController;
 use App\Http\Controllers\RoomController;
 use App\Http\Controllers\VoteController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Broadcast;
+
+Broadcast::routes(['middleware' => ['auth:sanctum']]);
 
 Route::post('/auth/guest/login', [GuestLoginController::class, 'login']);
 

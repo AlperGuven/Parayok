@@ -9,7 +9,9 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Broadcast;
 
 Broadcast::routes(['middleware' => ['auth:sanctum']]);
+require base_path('routes/channels.php');
 
+// Guest login
 Route::post('/auth/guest/login', [GuestLoginController::class, 'login']);
 
 Route::middleware('auth:sanctum')->group(function () {

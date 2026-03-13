@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Broadcast;
 
 Route::post('/broadcasting/auth', function (Illuminate\Http\Request $request) {
+    \Illuminate\Support\Facades\Log::info("Broadcasting auth hit. User: " . $request->user()?->id . " Channel: " . $request->channel_name);
     return Broadcast::auth($request);
 })->middleware('auth:sanctum');
 

@@ -5,14 +5,11 @@ use App\Models\Room;
 use App\Models\RoomParticipant;
 
 Broadcast::channel('room.{id}', function ($user, $id) {
-    \Illuminate\Support\Facades\Log::info("Channel auth attempt (public/private): User {$user->id}, Room {$id}");
+    \Illuminate\Support\Facades\Log::info("Channel auth attempt: User {$user->id}, Room {$id}");
     return checkRoomAccess($user, $id);
 });
 
-Broadcast::channel('presence-room.{id}', function ($user, $id) {
-    \Illuminate\Support\Facades\Log::info("Channel auth attempt (presence): User {$user->id}, Room {$id}");
-    return checkRoomAccess($user, $id);
-});
+// Removed duplicate presence-room rule because Laravel handles prefix automatically
 
 if (!function_exists('checkRoomAccess')) {
     function checkRoomAccess($user, $id) {

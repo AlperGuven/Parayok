@@ -39,6 +39,7 @@ class VoteCast implements ShouldBroadcast
             'jira_issue_key' => $this->issue->jira_issue_key,
             'user_id' => $this->user->id,
             'display_name' => $this->user->display_name,
+            'avatar_url' => $this->user->avatar_url,
             'has_voted' => $this->hasVoted,
         ];
     }

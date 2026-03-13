@@ -83,7 +83,7 @@ class RoomController extends Controller
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
-        $room = Room::where('uuid', $uuid)->with(['issues', 'roomParticipants.user', 'creator'])->firstOrFail();
+        $room = Room::where('uuid', $uuid)->with(['issues.votes.user', 'roomParticipants.user', 'creator'])->firstOrFail();
         
         $isParticipant = $room->participants()->where('user_id', $user->id)->exists();
         
@@ -109,6 +109,13 @@ class RoomController extends Controller
                     'status' => $issue->status,
                     'final_score' => $issue->final_score,
                     'sort_order' => $issue->sort_order,
+                    'voters' => $issue->votes->map(function ($vote) {
+                        return [
+                            'user_id' => $vote->user_id,
+                            'display_name' => $vote->user->display_name,
+                            'avatar_url' => $vote->user->avatar_url,
+                        ];
+                    }),
                 ];
             }),
             'participants' => $room->roomParticipants->map(function ($participant) {

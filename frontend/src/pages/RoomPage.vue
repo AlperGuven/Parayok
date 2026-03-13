@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted, computed, triggerRef } from "vue";
+import { ref, onMounted, onUnmounted, computed, triggerRef, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/authStore";
 import { useEcho } from "@/composables/useEcho";
@@ -17,7 +17,6 @@ const error = ref("");
 const currentVote = ref(null);
 const showAddIssue = ref(false);
 const newIssueUrl = ref("");
-const votedUsers = ref([]);
 const revealedVotes = ref([]);
 const isCopied = ref(false);
 
@@ -114,12 +113,17 @@ function setupEcho() {
     })
     .listen(".vote.cast", (data) => {
       if (data.issue_id == selectedIssue.value?.id) {
-        if (data.has_voted && !votedUsers.value.find((u) => u.user_id == data.user_id)) {
-          votedUsers.value.push({
+        if (!selectedIssue.value.voters) {
+          selectedIssue.value.voters = [];
+        }
+        if (data.has_voted && !selectedIssue.value.voters.find((u) => u.user_id == data.user_id)) {
+          selectedIssue.value.voters.push({
             user_id: data.user_id,
             display_name: data.display_name,
+            avatar_url: data.avatar_url,
             has_voted: true,
           });
+          triggerRef(selectedIssue);
         }
       }
     })
@@ -134,9 +138,10 @@ function setupEcho() {
 
       if (selectedIssue.value && selectedIssue.value.id == data.issue_id) {
         selectedIssue.value.status = "voting";
-        votedUsers.value = [];
+        selectedIssue.value.voters = [];
         revealedVotes.value = [];
         currentVote.value = null;
+        triggerRef(selectedIssue);
       }
     })
     .listen(".votes.revealed", (data) => {
@@ -150,9 +155,10 @@ function setupEcho() {
       if (selectedIssue.value && data.issue_id == selectedIssue.value.id) {
         selectedIssue.value.status = "pending";
         selectedIssue.value.final_score = null;
-        votedUsers.value = [];
+        selectedIssue.value.voters = [];
         revealedVotes.value = [];
         currentVote.value = null;
+        triggerRef(selectedIssue);
       }
     })
     .listen(".issue.added", (data) => {
@@ -494,7 +500,32 @@ async function reopenRoom() {
 
           <div class="mb-12">
             <div class="flex items-center justify-between mb-8">
-              <h3 class="text-xl font-display font-bold text-[#fdfc04] uppercase tracking-widest">Estimations</h3>
+              <div class="flex items-center gap-4">
+                <h3 class="text-xl font-display font-bold text-[#fdfc04] uppercase tracking-widest">Estimations</h3>
+                <div v-if="selectedIssue.status === 'voting'" class="flex -space-x-2">
+                  <div
+                    v-for="voter in selectedIssue.voters"
+                    :key="voter.user_id"
+                    class="w-8 h-8 rounded-full border-2 border-[#fdfc04] bg-[#00fbff] flex items-center justify-center text-[#041628] font-bold text-xs relative group"
+                    :title="voter.display_name"
+                  >
+                    <img
+                      v-if="voter.avatar_url"
+                      :src="voter.avatar_url"
+                      class="w-full h-full rounded-full object-cover"
+                    />
+                    <span v-else>{{ voter.display_name.charAt(0).toUpperCase() }}</span>
+
+                    <!-- Tooltip -->
+                    <div
+                      class="absolute bottom-full mb-2 hidden group-hover:block bg-black border border-[#fdfc04] text-[#fdfc04] text-xs px-2 py-1 whitespace-nowrap z-30 uppercase tracking-wider"
+                    >
+                      {{ voter.display_name }} voted!
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div class="flex gap-4" v-if="!isGuest">
                 <button
                   v-if="selectedIssue.status === 'pending'"

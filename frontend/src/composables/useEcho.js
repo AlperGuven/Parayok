@@ -27,7 +27,6 @@ export function useEcho() {
       authEndpoint: `${import.meta.env.VITE_API_URL || "/api"}/broadcasting/auth`,
       auth: {
         headers: {
-          "Content-Type": "application/json",
           Accept: "application/json",
           Authorization: token ? `Bearer ${token}` : undefined,
         },

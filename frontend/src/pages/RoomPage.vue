@@ -316,7 +316,7 @@ async function exitRoom() {
 
   if (isGuest.value) {
     authStore.logout();
-    window.location.href = "/";
+    router.push("/");
   } else {
     router.push("/dashboard");
   }

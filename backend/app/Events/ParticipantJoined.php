@@ -3,7 +3,7 @@
 namespace App\Events;
 
 use App\Models\RoomParticipant;
-use Illuminate\Broadcasting\Channel;
+use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -20,7 +20,7 @@ class ParticipantJoined implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel('room.' . $this->participant->room_id),
+            new PresenceChannel('room.' . $this->participant->room_id),
         ];
     }
 

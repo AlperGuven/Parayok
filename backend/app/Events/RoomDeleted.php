@@ -21,7 +21,7 @@ class RoomDeleted implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel('room.' . $this->roomId),
+            new PresenceChannel('room.' . $this->roomId),
         ];
     }
 

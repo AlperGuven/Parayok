@@ -48,100 +48,115 @@ function setupEcho() {
   const channelName = "room." + room.value.id;
 
   // Clean up existing listeners if any
-  echoInstance.leaveChannel(channelName);
+  echoInstance.leave(channelName);
 
-  const roomChannel = echoInstance.channel(channelName);
+  const roomChannel = echoInstance.join(channelName);
 
-  roomChannel.listen(".vote.cast", (data) => {
-    if (data.issue_id === selectedIssue.value?.id) {
-      if (data.has_voted && !votedUsers.value.find((u) => u.user_id === data.user_id)) {
-        votedUsers.value.push({
-          user_id: data.user_id,
-          display_name: data.display_name,
-          has_voted: true,
+  roomChannel
+    .here((users) => {
+      console.log("Here users:", users);
+      if (room.value.participants) {
+        room.value.participants.forEach((p) => (p.is_online = false));
+        users.forEach((user) => {
+          const participant = room.value.participants.find((p) => p.user_id === user.id);
+          if (participant) {
+            participant.is_online = true;
+          } else {
+            room.value.participants.push({
+              id: Date.now(),
+              user_id: user.id,
+              display_name: user.display_name,
+              avatar_url: user.avatar_url,
+              role: user.role,
+              is_online: true,
+            });
+          }
         });
       }
-    }
-  });
-
-  roomChannel.listen(".voting.started", (data) => {
-    // Automatically switch to the issue being voted on if not selected
-    if (!selectedIssue.value || selectedIssue.value.id !== data.issue_id) {
-      const issueToSelect = room.value.issues.find((i) => i.id === data.issue_id);
-      if (issueToSelect) {
-        selectedIssue.value = issueToSelect;
+    })
+    .joining((user) => {
+      console.log("User joining:", user);
+      const participant = room.value.participants.find((p) => p.user_id === user.id);
+      if (participant) {
+        participant.is_online = true;
+      } else {
+        room.value.participants.push({
+          id: Date.now(),
+          user_id: user.id,
+          display_name: user.display_name,
+          avatar_url: user.avatar_url,
+          role: user.role,
+          is_online: true,
+        });
       }
-    }
+    })
+    .leaving((user) => {
+      console.log("User leaving:", user);
+      const index = room.value.participants.findIndex((p) => p.user_id === user.id);
+      if (index !== -1) {
+        room.value.participants.splice(index, 1);
+      }
+    })
+    .listen(".vote.cast", (data) => {
+      if (data.issue_id === selectedIssue.value?.id) {
+        if (data.has_voted && !votedUsers.value.find((u) => u.user_id === data.user_id)) {
+          votedUsers.value.push({
+            user_id: data.user_id,
+            display_name: data.display_name,
+            has_voted: true,
+          });
+        }
+      }
+    })
+    .listen(".voting.started", (data) => {
+      // Automatically switch to the issue being voted on if not selected
+      if (!selectedIssue.value || selectedIssue.value.id !== data.issue_id) {
+        const issueToSelect = room.value.issues.find((i) => i.id === data.issue_id);
+        if (issueToSelect) {
+          selectedIssue.value = issueToSelect;
+        }
+      }
 
-    if (selectedIssue.value && selectedIssue.value.id === data.issue_id) {
-      selectedIssue.value.status = "voting";
-      votedUsers.value = [];
-    }
-  });
-
-  roomChannel.listen(".votes.revealed", (data) => {
-    if (selectedIssue.value && data.issue_id === selectedIssue.value.id) {
-      selectedIssue.value.status = "revealed";
-      selectedIssue.value.final_score = data.final_score;
-      revealedVotes.value = data.votes || [];
-    }
-  });
-
-  roomChannel.listen(".voting.reset", (data) => {
-    if (selectedIssue.value && data.issue_id === selectedIssue.value.id) {
-      selectedIssue.value.status = "pending";
-      selectedIssue.value.final_score = null;
-      votedUsers.value = [];
-      revealedVotes.value = [];
-      currentVote.value = null;
-    }
-  });
-
-  roomChannel.listen(".issue.added", (data) => {
-    console.log("Issue Added Event:", data); // DEBUG
-    const exists = room.value.issues.find((i) => i.id === data.id);
-    if (!exists) {
-      room.value.issues.push({
-        id: data.id,
-        jira_issue_key: data.jira_issue_key,
-        summary: data.summary,
-        description: data.description, // Ensure this is present
-        jira_url: data.jira_url,
-        status: "pending",
-        final_score: null,
-      });
-    }
-  });
-
-  roomChannel.listen(".participant.joined", (data) => {
-    console.log("Participant Joined Event:", data); // DEBUG
-    const exists = room.value.participants.find((p) => p.user_id === data.user_id);
-    if (!exists) {
-      room.value.participants.push({
-        id: Date.now(),
-        user_id: data.user_id,
-        display_name: data.display_name,
-        avatar_url: data.avatar_url,
-        role: data.role,
-        is_online: true,
-      });
-    } else {
-      exists.is_online = true;
-    }
-  });
-
-  roomChannel.listen(".participant.left", (data) => {
-    console.log("Participant Left Event:", data); // DEBUG
-    const index = room.value.participants.findIndex((p) => p.user_id == data.user_id); // Loose equality
-    if (index !== -1) {
-      room.value.participants.splice(index, 1);
-    }
-  });
-
-  roomChannel.listen(".room.deleted", () => {
-    alert("This room has been deleted by the moderator.");
-    exitRoom();
-  });
+      if (selectedIssue.value && selectedIssue.value.id === data.issue_id) {
+        selectedIssue.value.status = "voting";
+        votedUsers.value = [];
+      }
+    })
+    .listen(".votes.revealed", (data) => {
+      if (selectedIssue.value && data.issue_id === selectedIssue.value.id) {
+        selectedIssue.value.status = "revealed";
+        selectedIssue.value.final_score = data.final_score;
+        revealedVotes.value = data.votes || [];
+      }
+    })
+    .listen(".voting.reset", (data) => {
+      if (selectedIssue.value && data.issue_id === selectedIssue.value.id) {
+        selectedIssue.value.status = "pending";
+        selectedIssue.value.final_score = null;
+        votedUsers.value = [];
+        revealedVotes.value = [];
+        currentVote.value = null;
+      }
+    })
+    .listen(".issue.added", (data) => {
+      console.log("Issue Added Event:", data); // DEBUG
+      const exists = room.value.issues.find((i) => i.id === data.id);
+      if (!exists) {
+        room.value.issues.push({
+          id: data.id,
+          jira_issue_key: data.jira_issue_key,
+          summary: data.summary,
+          description: data.description, // Ensure this is present
+          jira_url: data.jira_url,
+          status: "pending",
+          final_score: null,
+        });
+      }
+    })
+    .listen(".room.deleted", () => {
+      alert("This room has been deleted by the moderator.");
+      exitRoom();
+    });
 }
 
 async function fetchRoom() {

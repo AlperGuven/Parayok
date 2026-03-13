@@ -4,7 +4,7 @@ namespace App\Events;
 
 use App\Models\Issue;
 use App\Models\User;
-use Illuminate\Broadcasting\Channel;
+use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -22,7 +22,7 @@ class IssueAdded implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel('room.' . $this->issue->room_id),
+            new PresenceChannel('room.' . $this->issue->room_id),
         ];
     }
 

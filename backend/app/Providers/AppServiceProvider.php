@@ -15,6 +15,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        require base_path('routes/channels.php');
+        
         Socialite::extend('atlassian', function ($app) {
             $config = $app['config']['services.atlassian'];
             $provider = new AtlassianProvider(

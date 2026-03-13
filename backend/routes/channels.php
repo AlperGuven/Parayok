@@ -5,11 +5,13 @@ use App\Models\Room;
 use App\Models\RoomParticipant;
 
 Broadcast::channel('room.{id}', function ($user, $id) {
+    \Illuminate\Support\Facades\Log::info("Channel auth attempt: User {$user->id}, Room {$id}");
     $participant = RoomParticipant::where('room_id', $id)
         ->where('user_id', $user->id)
         ->first();
 
     if ($participant) {
+        \Illuminate\Support\Facades\Log::info("Channel auth success");
         return [
             'id' => $user->id,
             'user_id' => $user->id,

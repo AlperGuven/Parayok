@@ -45,8 +45,8 @@ function setupEcho() {
   const echoInstance = connect();
   window.echoInstance = echoInstance;
 
-  const channelName = 'room.' + room.value.id;
-  
+  const channelName = "room." + room.value.id;
+
   // Clean up existing listeners if any
   echoInstance.leaveChannel(channelName);
 
@@ -67,12 +67,12 @@ function setupEcho() {
   roomChannel.listen(".voting.started", (data) => {
     // Automatically switch to the issue being voted on if not selected
     if (!selectedIssue.value || selectedIssue.value.id !== data.issue_id) {
-      const issueToSelect = room.value.issues.find(i => i.id === data.issue_id);
+      const issueToSelect = room.value.issues.find((i) => i.id === data.issue_id);
       if (issueToSelect) {
         selectedIssue.value = issueToSelect;
       }
     }
-    
+
     if (selectedIssue.value && selectedIssue.value.id === data.issue_id) {
       selectedIssue.value.status = "voting";
       votedUsers.value = [];
@@ -99,7 +99,7 @@ function setupEcho() {
 
   roomChannel.listen(".issue.added", (data) => {
     console.log("Issue Added Event:", data); // DEBUG
-    const exists = room.value.issues.find(i => i.id === data.id);
+    const exists = room.value.issues.find((i) => i.id === data.id);
     if (!exists) {
       room.value.issues.push({
         id: data.id,
@@ -132,8 +132,10 @@ function setupEcho() {
 
   roomChannel.listen(".participant.left", (data) => {
     console.log("Participant Left Event:", data); // DEBUG
-    // Force reactivity by creating new array
-    room.value.participants = room.value.participants.filter(p => p.user_id !== data.user_id);
+    const index = room.value.participants.findIndex((p) => p.user_id == data.user_id); // Loose equality
+    if (index !== -1) {
+      room.value.participants.splice(index, 1);
+    }
   });
 
   roomChannel.listen(".room.deleted", () => {
@@ -151,7 +153,7 @@ async function fetchRoom() {
     }
   } catch (e) {
     // If user is not a participant, try to join
-    if (e.response?.status === 403 && e.response?.data?.message === 'You are not a participant of this room') {
+    if (e.response?.status === 403 && e.response?.data?.message === "You are not a participant of this room") {
       try {
         await api.post(`/api/rooms/${route.params.uuid}/join`);
         // Retry fetching room after joining
@@ -190,9 +192,9 @@ async function startVoting() {
     const issueId = selectedIssue.value.id; // Store current issue ID
     await api.post(`/api/rooms/${room.value.uuid}/issues/${issueId}/start-voting`);
     await fetchRoom();
-    
+
     // Restore selected issue
-    const updatedIssue = room.value.issues.find(i => i.id === issueId);
+    const updatedIssue = room.value.issues.find((i) => i.id === issueId);
     if (updatedIssue) {
       selectedIssue.value = updatedIssue;
     }
@@ -208,9 +210,9 @@ async function revealVotes() {
     const response = await api.post(`/api/rooms/${room.value.uuid}/issues/${issueId}/reveal`);
     revealedVotes.value = response.data.votes || [];
     await fetchRoom();
-    
+
     // Restore selected issue
-    const updatedIssue = room.value.issues.find(i => i.id === issueId);
+    const updatedIssue = room.value.issues.find((i) => i.id === issueId);
     if (updatedIssue) {
       selectedIssue.value = updatedIssue;
     }
@@ -226,9 +228,9 @@ async function resetVoting() {
     await api.post(`/api/rooms/${room.value.uuid}/issues/${issueId}/reset`);
     currentVote.value = null;
     await fetchRoom();
-    
+
     // Restore selected issue
-    const updatedIssue = room.value.issues.find(i => i.id === issueId);
+    const updatedIssue = room.value.issues.find((i) => i.id === issueId);
     if (updatedIssue) {
       selectedIssue.value = updatedIssue;
     }
@@ -283,7 +285,7 @@ const isGuest = computed(() => {
 
 async function exitRoom() {
   console.log("Exiting room. isGuest:", isGuest.value, "User:", authStore.user);
-  
+
   if (room.value) {
     try {
       await api.post(`/api/rooms/${room.value.uuid}/leave`);
@@ -291,7 +293,7 @@ async function exitRoom() {
       console.error("Failed to leave room:", e);
     }
   }
-  
+
   if (isGuest.value) {
     authStore.logout();
     window.location.href = "/";
@@ -323,7 +325,7 @@ async function reopenRoom() {
         @click="exitRoom"
         class="text-[#fdfc04] hover:text-white transition-colors font-sans uppercase tracking-wider"
       >
-        {{ isGuest ? 'EXIT' : 'BACK TO DASHBOARD' }}
+        {{ isGuest ? "EXIT" : "BACK TO DASHBOARD" }}
       </button>
     </div>
 
@@ -341,7 +343,7 @@ async function reopenRoom() {
               @click="copyRoomLink"
               class="text-xs text-gray-400 hover:text-[#fdfc04] transition-colors uppercase tracking-wider"
             >
-              {{ isCopied ? 'COPIED!' : 'COPY LINK' }}
+              {{ isCopied ? "COPIED!" : "COPY LINK" }}
             </button>
           </div>
         </div>
@@ -562,7 +564,7 @@ async function reopenRoom() {
             <div class="w-12 h-12 border border-gray-700"></div>
           </div>
           <p class="font-display tracking-widest uppercase mb-8">SELECT AN ISSUE TO START</p>
-          
+
           <button
             @click="router.push('/dashboard')"
             class="px-6 py-3 border border-gray-700 text-gray-400 hover:text-[#fdfc04] hover:border-[#fdfc04] transition-all uppercase tracking-widest font-sans font-bold"

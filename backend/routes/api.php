@@ -8,7 +8,10 @@ use App\Http\Controllers\VoteController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Broadcast;
 
-Broadcast::routes(['middleware' => ['auth:sanctum']]);
+Route::post('/broadcasting/auth', function (Illuminate\Http\Request $request) {
+    return Broadcast::auth($request);
+})->middleware('auth:sanctum');
+
 require base_path('routes/channels.php');
 
 // Guest login

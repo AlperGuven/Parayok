@@ -5,7 +5,6 @@ use App\Models\Room;
 use App\Models\RoomParticipant;
 
 Broadcast::channel('room.{id}', function ($user, $id) {
-    \Illuminate\Support\Facades\Log::info("Channel auth attempt: User {$user->id}, Room {$id}");
     return checkRoomAccess($user, $id);
 });
 
@@ -18,7 +17,6 @@ if (!function_exists('checkRoomAccess')) {
             ->first();
 
         if ($participant) {
-            \Illuminate\Support\Facades\Log::info("Channel auth success");
             return [
                 'id' => $user->id,
                 'user_id' => $user->id,

@@ -10,8 +10,8 @@ cd "$(dirname "$0")/../.."
 echo "📂 Çalışma dizini: $(pwd)"
 
 # 1. Kodları Güncelle
-echo "📥 Git pull atlanıyor (lokal düzenleme)..."
-# git pull origin main
+echo "📥 Git pull yapılıyor..."
+git pull origin main
 
 # 2. Backend Kurulumu
 echo "🐘 Backend bağımlılıkları yükleniyor..."

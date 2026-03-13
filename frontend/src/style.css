@@ -44,7 +44,7 @@ h1, h2, h3, h4, h5, h6 {
   position: absolute;
   width: 8px;
   height: 8px;
-  border: 2px solid #fdfc04;
+  border: 3px solid #fdfc04;
   transition: all 0.3s ease;
 }
 

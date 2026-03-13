@@ -58,7 +58,6 @@ function setupEcho() {
 
   roomChannel
     .here((users) => {
-      console.log("Here users:", users);
       if (room.value && room.value.participants) {
         // Reset online status first
         room.value.participants.forEach((p) => (p.is_online = false));
@@ -84,7 +83,6 @@ function setupEcho() {
       }
     })
     .joining((user) => {
-      console.log("User joining:", user);
       if (!room.value || !room.value.participants) return;
 
       const participantIndex = room.value.participants.findIndex((p) => p.user_id == user.id);
@@ -107,7 +105,6 @@ function setupEcho() {
       triggerRef(room);
     })
     .leaving((user) => {
-      console.log("User leaving:", user);
       if (!room.value || !room.value.participants) return;
 
       // Remove from list or mark offline
@@ -322,8 +319,6 @@ const isGuest = computed(() => {
 });
 
 async function exitRoom() {
-  console.log("Exiting room. isGuest:", isGuest.value, "User:", authStore.user);
-
   if (room.value) {
     try {
       await api.post(`/api/rooms/${room.value.uuid}/leave`);
@@ -499,7 +494,7 @@ async function reopenRoom() {
 
           <div class="mb-12">
             <div class="flex items-center justify-between mb-8">
-              <h3 class="text-xl font-display font-bold text-[#fdfc04] uppercase tracking-widest">Estimation</h3>
+              <h3 class="text-xl font-display font-bold text-[#fdfc04] uppercase tracking-widest">Estimations</h3>
               <div class="flex gap-4" v-if="!isGuest">
                 <button
                   v-if="selectedIssue.status === 'pending'"

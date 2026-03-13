@@ -34,7 +34,6 @@ async function fetchRooms() {
   } catch (error) {
     console.error("fetchRooms: Failed to fetch rooms:", error);
     if (error.response?.status === 401) {
-      console.log("fetchRooms: 401 - clearing user and redirecting");
       authStore.logout();
       router.push("/");
       return;

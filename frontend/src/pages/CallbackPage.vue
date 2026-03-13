@@ -12,8 +12,6 @@ onMounted(async () => {
   const code = urlParams.get("code");
   const state = urlParams.get("state");
 
-  console.log("Callback page loaded", { code: !!code, state });
-
   if (code) {
     try {
       await api.get("/sanctum/csrf-cookie");
@@ -24,7 +22,6 @@ onMounted(async () => {
         authStore.setAuth(response.data.user, response.data.token);
       } else if (response.data.user) {
         // Fallback for session auth if token is missing (shouldn't happen with new backend)
-        console.log("Setting user in store (no token):", response.data.user);
         authStore.user = response.data.user;
       }
 
@@ -41,7 +38,6 @@ onMounted(async () => {
       }
     }
   } else {
-    console.log("No code, redirecting to home");
     router.push("/");
   }
 });

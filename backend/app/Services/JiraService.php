@@ -71,11 +71,6 @@ class JiraService
             ->withHeaders(['Accept' => 'application/json'])
             ->get(self::API_URL . '/oauth/token/accessible-resources');
 
-        Log::info('Accessible resources response', [
-            'status' => $response->status(),
-            'body' => $response->body(),
-        ]);
-
         return $response->json() ?? [];
     }
 
@@ -236,7 +231,6 @@ class JiraService
 
         if (!$response->successful()) {
             if ($response->status() === 401) {
-                Log::warning('Jira API 401 Unauthorized', ['user_id' => $this->user->id]);
                 abort(401, 'Jira Authentication Failed');
             }
             throw new \Exception('Jira API request failed: ' . $response->body());

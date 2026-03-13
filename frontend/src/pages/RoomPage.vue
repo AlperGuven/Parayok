@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from "vue";
+import { ref, onMounted, onUnmounted, computed, triggerRef } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/authStore";
 import { useEcho } from "@/composables/useEcho";
@@ -38,7 +38,8 @@ onUnmounted(() => {
     if (room.value) {
       window.echoInstance.leave("room." + room.value.id);
     }
-    window.echoInstance.disconnect();
+    // Do not disconnect global echo instance as it might be used elsewhere
+    // window.echoInstance.disconnect();
   }
 });
 
@@ -58,15 +59,19 @@ function setupEcho() {
   roomChannel
     .here((users) => {
       console.log("Here users:", users);
-      if (room.value.participants) {
+      if (room.value && room.value.participants) {
+        // Reset online status first
         room.value.participants.forEach((p) => (p.is_online = false));
+
         users.forEach((user) => {
-          const participant = room.value.participants.find((p) => p.user_id === user.id);
+          // Use loose equality for ID matching
+          const participant = room.value.participants.find((p) => p.user_id == user.id);
           if (participant) {
             participant.is_online = true;
           } else {
+            // New participant found in 'here' list (should ideally be in DB, but add if missing)
             room.value.participants.push({
-              id: Date.now(),
+              id: Date.now() + Math.random(), // Unique temp ID
               user_id: user.id,
               display_name: user.display_name,
               avatar_url: user.avatar_url,
@@ -75,14 +80,21 @@ function setupEcho() {
             });
           }
         });
+        triggerRef(room);
       }
     })
     .joining((user) => {
       console.log("User joining:", user);
-      const participant = room.value.participants.find((p) => p.user_id === user.id);
-      if (participant) {
-        participant.is_online = true;
+      if (!room.value || !room.value.participants) return;
+
+      const participantIndex = room.value.participants.findIndex((p) => p.user_id == user.id);
+
+      if (participantIndex !== -1) {
+        // Update existing participant
+        room.value.participants[participantIndex].is_online = true;
+        room.value.participants[participantIndex].display_name = user.display_name; // Update name if changed
       } else {
+        // Add new participant
         room.value.participants.push({
           id: Date.now(),
           user_id: user.id,
@@ -92,17 +104,20 @@ function setupEcho() {
           is_online: true,
         });
       }
+      triggerRef(room);
     })
     .leaving((user) => {
       console.log("User leaving:", user);
-      const index = room.value.participants.findIndex((p) => p.user_id === user.id);
-      if (index !== -1) {
-        room.value.participants.splice(index, 1);
-      }
+      if (!room.value || !room.value.participants) return;
+
+      // Remove from list or mark offline
+      // For now, let's remove them to keep the list clean
+      room.value.participants = room.value.participants.filter((p) => p.user_id != user.id);
+      triggerRef(room);
     })
     .listen(".vote.cast", (data) => {
-      if (data.issue_id === selectedIssue.value?.id) {
-        if (data.has_voted && !votedUsers.value.find((u) => u.user_id === data.user_id)) {
+      if (data.issue_id == selectedIssue.value?.id) {
+        if (data.has_voted && !votedUsers.value.find((u) => u.user_id == data.user_id)) {
           votedUsers.value.push({
             user_id: data.user_id,
             display_name: data.display_name,
@@ -113,14 +128,14 @@ function setupEcho() {
     })
     .listen(".voting.started", (data) => {
       // Automatically switch to the issue being voted on if not selected
-      if (!selectedIssue.value || selectedIssue.value.id !== data.issue_id) {
-        const issueToSelect = room.value.issues.find((i) => i.id === data.issue_id);
+      if (!selectedIssue.value || selectedIssue.value.id != data.issue_id) {
+        const issueToSelect = room.value.issues.find((i) => i.id == data.issue_id);
         if (issueToSelect) {
           selectedIssue.value = issueToSelect;
         }
       }
 
-      if (selectedIssue.value && selectedIssue.value.id === data.issue_id) {
+      if (selectedIssue.value && selectedIssue.value.id == data.issue_id) {
         selectedIssue.value.status = "voting";
         votedUsers.value = [];
         revealedVotes.value = [];
@@ -128,14 +143,14 @@ function setupEcho() {
       }
     })
     .listen(".votes.revealed", (data) => {
-      if (selectedIssue.value && data.issue_id === selectedIssue.value.id) {
+      if (selectedIssue.value && data.issue_id == selectedIssue.value.id) {
         selectedIssue.value.status = "revealed";
         selectedIssue.value.final_score = data.final_score;
         revealedVotes.value = data.votes || [];
       }
     })
     .listen(".voting.reset", (data) => {
-      if (selectedIssue.value && data.issue_id === selectedIssue.value.id) {
+      if (selectedIssue.value && data.issue_id == selectedIssue.value.id) {
         selectedIssue.value.status = "pending";
         selectedIssue.value.final_score = null;
         votedUsers.value = [];
@@ -145,7 +160,9 @@ function setupEcho() {
     })
     .listen(".issue.added", (data) => {
       console.log("Issue Added Event:", data); // DEBUG
-      const exists = room.value.issues.find((i) => i.id === data.id);
+      if (!room.value || !room.value.issues) return;
+
+      const exists = room.value.issues.find((i) => i.id == data.id);
       if (!exists) {
         room.value.issues.push({
           id: data.id,
@@ -156,6 +173,7 @@ function setupEcho() {
           status: "pending",
           final_score: null,
         });
+        triggerRef(room);
       }
     })
     .listen(".room.deleted", () => {

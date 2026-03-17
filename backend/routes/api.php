@@ -19,6 +19,7 @@ Route::post('/auth/guest/login', [GuestLoginController::class, 'login']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [JiraAuthController::class, 'user']);
+    Route::post('/user/profile', [JiraAuthController::class, 'updateProfile']);
     Route::post('/auth/logout', [JiraAuthController::class, 'logout']);
     Route::get('/rooms', [RoomController::class, 'index']);
     Route::post('/rooms', [RoomController::class, 'store']);
@@ -37,6 +38,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/rooms/{uuid}/issues/{id}/start-voting', [VoteController::class, 'startVoting']);
     Route::post('/rooms/{uuid}/issues/{id}/reveal', [VoteController::class, 'revealVotes']);
     Route::post('/rooms/{uuid}/issues/{id}/reset', [VoteController::class, 'resetVoting']);
+    Route::post('/rooms/{uuid}/issues/{id}/update-score', [VoteController::class, 'updateFinalScore']);
 });
 
 Route::post('/auth/jira/callback', [JiraAuthController::class, 'handleCallback']);

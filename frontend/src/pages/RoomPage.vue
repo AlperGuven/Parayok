@@ -19,6 +19,8 @@ const showAddIssue = ref(false);
 const newIssueUrl = ref("");
 const revealedVotes = ref([]);
 const isCopied = ref(false);
+const isEditingScore = ref(false);
+const editedScore = ref("");
 
 const cards = ["1", "2", "3", "5", "8", "13", "21", "?", "☕"];
 
@@ -149,6 +151,7 @@ function setupEcho() {
         selectedIssue.value.status = "revealed";
         selectedIssue.value.final_score = data.final_score;
         revealedVotes.value = data.votes || [];
+        isEditingScore.value = false;
       }
     })
     .listen(".voting.reset", (data) => {
@@ -158,6 +161,7 @@ function setupEcho() {
         selectedIssue.value.voters = [];
         revealedVotes.value = [];
         currentVote.value = null;
+        isEditingScore.value = false;
         triggerRef(selectedIssue);
       }
     })
@@ -239,6 +243,7 @@ async function startVoting() {
     if (updatedIssue) {
       selectedIssue.value = updatedIssue;
     }
+    isEditingScore.value = false;
   } catch (e) {
     console.error("Failed to start voting:", e);
   }
@@ -268,6 +273,7 @@ async function resetVoting() {
     const issueId = selectedIssue.value.id; // Store current issue ID
     await api.post(`/api/rooms/${room.value.uuid}/issues/${issueId}/reset`);
     currentVote.value = null;
+    isEditingScore.value = false;
     await fetchRoom();
 
     // Restore selected issue
@@ -341,6 +347,23 @@ async function exitRoom() {
   }
 }
 
+async function saveFinalScore() {
+  if (!selectedIssue.value || !room.value || !editedScore.value) return;
+  try {
+    const issueId = selectedIssue.value.id;
+    await api.post(`/api/rooms/${room.value.uuid}/issues/${issueId}/update-score`, {
+      final_score: editedScore.value,
+    });
+    isEditingScore.value = false;
+  } catch (e) {
+    console.error("Failed to update score:", e);
+  }
+}
+
+function startEditingScore() {
+  editedScore.value = selectedIssue.value.final_score;
+  isEditingScore.value = true;
+}
 async function reopenRoom() {
   if (!room.value) return;
   try {
@@ -394,7 +417,7 @@ async function reopenRoom() {
               @click="showAddIssue = true"
               class="text-md text-[#00fbff] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider font-bold"
               :disabled="room?.status === 'completed'"
-              v-if="!isGuest"
+              v-if="isCreator"
             >
               + ADD
             </button>
@@ -526,7 +549,7 @@ async function reopenRoom() {
                 </div>
               </div>
 
-              <div class="flex gap-4" v-if="!isGuest">
+              <div class="flex gap-4" v-if="isCreator">
                 <button
                   v-if="selectedIssue.status === 'pending'"
                   @click="startVoting"
@@ -585,11 +608,52 @@ async function reopenRoom() {
 
             <div v-if="selectedIssue.status === 'revealed'" class="mt-8">
               <div class="flex justify-center mb-16">
-                <div class="art-deco-card p-10 text-center min-w-[200px]">
+                <div class="art-deco-card p-10 text-center min-w-[200px] relative group">
                   <p class="text-gray-400 text-sm mb-4 uppercase tracking-widest font-sans">FINAL SCORE</p>
-                  <p class="text-7xl font-bold text-[#00fbff] font-display drop-shadow-[0_0_10px_rgba(0,251,255,0.5)]">
-                    {{ selectedIssue.final_score }}
-                  </p>
+
+                  <div v-if="!isEditingScore">
+                    <p
+                      class="text-7xl font-bold text-[#00fbff] font-display drop-shadow-[0_0_10px_rgba(0,251,255,0.5)]"
+                    >
+                      {{ selectedIssue.final_score }}
+                    </p>
+                    <button
+                      v-if="isCreator && room?.status !== 'completed'"
+                      @click="startEditingScore"
+                      class="absolute top-4 right-4 text-gray-500 hover:text-[#fdfc04] opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path
+                          d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div v-else class="flex flex-col items-center gap-4 mt-2">
+                    <input
+                      v-model="editedScore"
+                      type="text"
+                      class="w-32 text-center text-5xl font-bold text-[#00fbff] font-display bg-black border border-[#fdfc04] focus:outline-none focus:shadow-[0_0_10px_rgba(253,252,4,0.3)] p-2"
+                      @keyup.enter="saveFinalScore"
+                      @keyup.esc="isEditingScore = false"
+                      autofocus
+                    />
+                    <div class="flex gap-2">
+                      <button
+                        @click="saveFinalScore"
+                        class="text-xs text-[#00fbff] hover:text-white font-bold tracking-widest"
+                      >
+                        SAVE
+                      </button>
+                      <button
+                        @click="isEditingScore = false"
+                        class="text-xs text-gray-500 hover:text-gray-300 tracking-widest"
+                      >
+                        CANCEL
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -638,7 +702,7 @@ async function reopenRoom() {
         </div>
 
         <button
-          v-if="room?.status !== 'completed' && !isGuest"
+          v-if="room?.status !== 'completed' && isCreator"
           @click="finishRoom"
           class="absolute bottom-8 right-8 px-8 py-4 bg-red-900/80 border border-red-500 text-red-100 hover:bg-red-800 hover:text-white shadow-lg font-bold tracking-widest uppercase font-display transition-all z-20"
         >

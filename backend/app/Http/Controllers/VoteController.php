@@ -49,6 +49,11 @@ class VoteController extends Controller
     public function startVoting(Request $request, string $uuid, int $issueId)
     {
         $room = Room::where('uuid', $uuid)->firstOrFail();
+        
+        if ($room->created_by !== Auth::id()) {
+            return response()->json(['message' => 'Only room creator can start voting'], 403);
+        }
+
         $issue = Issue::where('id', $issueId)
             ->where('room_id', $room->id)
             ->firstOrFail();
@@ -70,6 +75,11 @@ class VoteController extends Controller
     public function revealVotes(Request $request, string $uuid, int $issueId)
     {
         $room = Room::where('uuid', $uuid)->firstOrFail();
+        
+        if ($room->created_by !== Auth::id()) {
+            return response()->json(['message' => 'Only room creator can reveal votes'], 403);
+        }
+
         $issue = Issue::where('id', $issueId)
             ->where('room_id', $room->id)
             ->firstOrFail();
@@ -119,6 +129,11 @@ class VoteController extends Controller
     public function resetVoting(Request $request, string $uuid, int $issueId)
     {
         $room = Room::where('uuid', $uuid)->firstOrFail();
+        
+        if ($room->created_by !== Auth::id()) {
+            return response()->json(['message' => 'Only room creator can reset voting'], 403);
+        }
+
         $issue = Issue::where('id', $issueId)
             ->where('room_id', $room->id)
             ->firstOrFail();
@@ -135,6 +150,60 @@ class VoteController extends Controller
         return response()->json(['message' => 'Voting reset']);
     }
 
+    public function updateFinalScore(Request $request, string $uuid, int $issueId)
+    {
+        $request->validate([
+            'final_score' => 'required|numeric'
+        ]);
+
+        $room = Room::where('uuid', $uuid)->firstOrFail();
+        
+        if ($room->created_by !== Auth::id()) {
+            return response()->json(['message' => 'Only room creator can update final score'], 403);
+        }
+
+        $issue = Issue::where('id', $issueId)
+            ->where('room_id', $room->id)
+            ->firstOrFail();
+
+        $issue->update([
+            'final_score' => $request->final_score,
+        ]);
+
+        // We can reuse the VotesRevealed event to broadcast the new final score to all clients
+        $votes = Vote::where('issue_id', $issue->id)
+            ->with('user')
+            ->get()
+            ->map(function ($vote) {
+                return [
+                    'user_id' => $vote->user_id,
+                    'display_name' => $vote->user->display_name,
+                    'value' => $vote->value,
+                ];
+            });
+
+        $numericVotes = $votes->filter(function ($vote) {
+            return is_numeric($vote['value']);
+        })->pluck('value');
+
+        $average = $numericVotes->count() > 0 
+            ? round($numericVotes->avg(), 1) 
+            : null;
+
+        event(new VotesRevealed($issue, Auth::user(), $votes->toArray(), $average));
+
+        if ($issue->final_score) {
+            $jiraService = new JiraService(Auth::user());
+            $jiraService->setUser(Auth::user());
+            $jiraService->updateStoryPoints($issue->jira_issue_key, $issue->final_score);
+        }
+
+        return response()->json([
+            'message' => 'Final score updated',
+            'final_score' => $issue->final_score,
+        ]);
+    }
+
     private function calculateFinalScore($votes): ?float
     {
         $numericVotes = $votes->filter(function ($value) {
@@ -147,7 +216,15 @@ class VoteController extends Controller
             return null;
         }
 
-        $mode = $numericVotes->countBy()->sortDesc()->keys()->first();
+        // Count frequencies of each vote
+        $frequencies = $numericVotes->countBy();
+        
+        // Sort by frequency descending. If frequencies are equal, Laravel's sortDesc maintains relative order,
+        // but we want the higher vote value to win if frequencies are tied.
+        // So we first sort by keys (vote values) descending, then by frequencies descending.
+        $sortedVotes = $frequencies->sortKeysDesc()->sortDesc();
+
+        $mode = $sortedVotes->keys()->first();
 
         return $mode !== null ? (float) $mode : null;
     }

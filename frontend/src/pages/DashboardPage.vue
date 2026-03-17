@@ -15,6 +15,9 @@ const showDeleteModal = ref(false);
 const showInfoModal = ref(false);
 const roomToDelete = ref(null);
 const roomInfo = ref(null);
+const showProfileModal = ref(false);
+const newProfileName = ref("");
+const isUpdatingProfile = ref(false);
 
 onMounted(async () => {
   await authStore.fetchUser();
@@ -101,9 +104,32 @@ function showInfo(room, event) {
 function closeModals() {
   showDeleteModal.value = false;
   showInfoModal.value = false;
+  showProfileModal.value = false;
   roomToDelete.value = null;
   roomInfo.value = null;
   activeMenuRoomId.value = null;
+}
+
+function openProfileModal() {
+  newProfileName.value = authStore.user?.display_name || "";
+  showProfileModal.value = true;
+}
+
+async function updateProfile() {
+  if (!newProfileName.value.trim() || isUpdatingProfile.value) return;
+
+  isUpdatingProfile.value = true;
+  try {
+    const response = await api.post("/api/user/profile", {
+      display_name: newProfileName.value.trim(),
+    });
+    authStore.user = response.data.user;
+    closeModals();
+  } catch (error) {
+    console.error("Failed to update profile:", error);
+  } finally {
+    isUpdatingProfile.value = false;
+  }
 }
 
 // Close menu when clicking outside
@@ -119,10 +145,28 @@ window.addEventListener("click", () => {
         <div class="flex items-center">
           <img :src="logo" alt="Parayok" class="h-24" />
         </div>
-        <div class="flex items-center gap-4">
-          <span v-if="authStore.user" class="text-[#fdfc04] font-display tracking-widest uppercase">{{
-            authStore.user.display_name
-          }}</span>
+        <div class="flex items-center gap-6">
+          <button
+            v-if="authStore.user"
+            @click="openProfileModal"
+            class="group flex items-center gap-2 text-[#fdfc04] hover:text-white transition-colors"
+          >
+            <span class="font-display tracking-widest uppercase">{{ authStore.user.display_name }}</span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 opacity-50 group-hover:opacity-100"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+              />
+            </svg>
+          </button>
           <button
             @click="logout"
             class="text-sm text-gray-400 hover:text-white transition-colors font-sans uppercase tracking-wider"
@@ -296,6 +340,46 @@ window.addEventListener("click", () => {
             class="px-6 py-2 art-deco-button primary font-bold tracking-widest text-sm uppercase"
           >
             CLOSE
+          </button>
+        </div>
+
+        <!-- Corner decorations -->
+        <div class="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#fdfc04]"></div>
+        <div class="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#fdfc04]"></div>
+      </div>
+    </div>
+    <!-- Profile Edit Modal -->
+    <div
+      v-if="showProfileModal"
+      class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+    >
+      <div class="art-deco-card p-8 max-w-md w-full relative">
+        <h3 class="text-2xl font-display font-bold text-[#fdfc04] mb-6 uppercase tracking-widest">Edit Profile</h3>
+
+        <div class="mb-8">
+          <label class="block text-xs text-gray-500 uppercase tracking-widest mb-2">DISPLAY NAME</label>
+          <input
+            v-model="newProfileName"
+            type="text"
+            class="w-full art-deco-input text-lg"
+            @keyup.enter="updateProfile"
+            autofocus
+          />
+        </div>
+
+        <div class="flex justify-end gap-4">
+          <button
+            @click="closeModals"
+            class="px-6 py-2 border border-gray-600 text-gray-400 hover:text-white hover:border-white uppercase tracking-widest font-bold text-sm"
+          >
+            CANCEL
+          </button>
+          <button
+            @click="updateProfile"
+            :disabled="isUpdatingProfile || !newProfileName.trim()"
+            class="px-6 py-2 art-deco-button primary uppercase tracking-widest font-bold text-sm disabled:opacity-50"
+          >
+            {{ isUpdatingProfile ? "SAVING..." : "SAVE" }}
           </button>
         </div>
 

@@ -17,6 +17,10 @@ class IssueController extends Controller
         $room = Room::where('uuid', $uuid)->firstOrFail();
         $user = $request->user();
 
+        if ($room->created_by !== $user->id) {
+            return response()->json(['message' => 'Only room creator can add issues'], 403);
+        }
+
         $jiraService = new JiraService($user);
         $jiraService->setUser($user);
 
@@ -73,6 +77,10 @@ class IssueController extends Controller
         $room = Room::where('uuid', $uuid)->firstOrFail();
         $user = $request->user();
 
+        if ($room->created_by !== $user->id) {
+            return response()->json(['message' => 'Only room creator can add issues'], 403);
+        }
+
         $jiraService = new JiraService($user);
         $jiraService->setUser($user);
 
@@ -122,6 +130,11 @@ class IssueController extends Controller
     public function destroy(Request $request, string $uuid, int $id)
     {
         $room = Room::where('uuid', $uuid)->firstOrFail();
+        $user = $request->user();
+
+        if ($room->created_by !== $user->id) {
+            return response()->json(['message' => 'Only room creator can delete issues'], 403);
+        }
         
         $issue = Issue::where('id', $id)
             ->where('room_id', $room->id)
@@ -139,6 +152,11 @@ class IssueController extends Controller
         ]);
 
         $room = Room::where('uuid', $uuid)->firstOrFail();
+        $user = $request->user();
+
+        if ($room->created_by !== $user->id) {
+            return response()->json(['message' => 'Only room creator can reorder issues'], 403);
+        }
         
         $issue = Issue::where('id', $id)
             ->where('room_id', $room->id)

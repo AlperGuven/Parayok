@@ -115,4 +115,21 @@ class JiraAuthController extends Controller
 
         return $request->user();
     }
+
+    public function updateProfile(Request $request)
+    {
+        $request->validate([
+            'display_name' => 'required|string|max:255',
+        ]);
+
+        $user = $request->user();
+        $user->update([
+            'display_name' => $request->display_name,
+        ]);
+
+        return response()->json([
+            'message' => 'Profile updated successfully',
+            'user' => $user
+        ]);
+    }
 }

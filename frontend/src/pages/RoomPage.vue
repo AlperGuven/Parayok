@@ -118,15 +118,22 @@ function setupEcho() {
         if (!selectedIssue.value.voters) {
           selectedIssue.value.voters = [];
         }
-        if (data.has_voted && !selectedIssue.value.voters.find((u) => u.user_id == data.user_id)) {
+
+        // Remove existing vote if user changed their mind
+        const existingIndex = selectedIssue.value.voters.findIndex((u) => u.user_id == data.user_id);
+        if (existingIndex !== -1) {
+          selectedIssue.value.voters.splice(existingIndex, 1);
+        }
+
+        if (data.has_voted) {
           selectedIssue.value.voters.push({
             user_id: data.user_id,
             display_name: data.display_name,
             avatar_url: data.avatar_url,
             has_voted: true,
           });
-          triggerRef(selectedIssue);
         }
+        triggerRef(selectedIssue);
       }
     })
     .listen(".voting.started", (data) => {
@@ -236,6 +243,10 @@ async function fetchRoom() {
 
 async function castVote(value) {
   if (!selectedIssue.value || !room.value) return;
+
+  // If clicking the same card again, maybe un-vote? (Optional, but good UX)
+  // Let's just allow changing vote for now as requested.
+
   currentVote.value = value;
   try {
     await api.post(`/api/rooms/${room.value.uuid}/issues/${selectedIssue.value.id}/vote`, { value });

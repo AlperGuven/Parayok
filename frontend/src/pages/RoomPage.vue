@@ -193,8 +193,16 @@ async function fetchRoom() {
   try {
     const response = await api.get(`/api/rooms/${route.params.uuid}`);
     room.value = response.data;
+
     if (room.value.issues.length > 0) {
-      selectedIssue.value = room.value.issues[0];
+      // Find if any issue is currently in voting status
+      const activeIssue = room.value.issues.find((i) => i.status === "voting");
+
+      if (activeIssue) {
+        selectedIssue.value = activeIssue;
+      } else {
+        selectedIssue.value = room.value.issues[0];
+      }
     }
   } catch (e) {
     // If user is not a participant, try to join
@@ -205,7 +213,12 @@ async function fetchRoom() {
         const response = await api.get(`/api/rooms/${route.params.uuid}`);
         room.value = response.data;
         if (room.value.issues.length > 0) {
-          selectedIssue.value = room.value.issues[0];
+          const activeIssue = room.value.issues.find((i) => i.status === "voting");
+          if (activeIssue) {
+            selectedIssue.value = activeIssue;
+          } else {
+            selectedIssue.value = room.value.issues[0];
+          }
         }
         setupEcho();
         return;
@@ -609,24 +622,34 @@ async function reopenRoom() {
             <div v-if="selectedIssue.status === 'revealed'" class="mt-8">
               <div class="flex justify-center mb-16">
                 <div class="art-deco-card p-10 text-center min-w-[200px] relative group">
-                  <p class="text-gray-400 text-sm mb-4 uppercase tracking-widest font-sans">FINAL SCORE</p>
+                  <p class="text-gray-400 text-sm mb-4 uppercase tracking-widest font-sans">
+                    {{ isCreator ? "SET FINAL SCORE" : "SUGGESTED SCORE" }}
+                  </p>
 
                   <div v-if="!isEditingScore">
                     <p
                       class="text-7xl font-bold text-[#00fbff] font-display drop-shadow-[0_0_10px_rgba(0,251,255,0.5)]"
                     >
-                      {{ selectedIssue.final_score }}
+                      {{ selectedIssue.final_score || "?" }}
                     </p>
                     <button
                       v-if="isCreator && room?.status !== 'completed'"
                       @click="startEditingScore"
                       class="absolute top-4 right-4 text-gray-500 hover:text-[#fdfc04] opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Edit and Save to Jira"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path
                           d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
                         />
                       </svg>
+                    </button>
+                    <button
+                      v-if="isCreator && room?.status !== 'completed'"
+                      @click="startEditingScore"
+                      class="mt-6 px-4 py-2 border border-[#00fbff] text-[#00fbff] hover:bg-[#00fbff] hover:text-[#041628] text-xs font-bold tracking-widest transition-colors uppercase"
+                    >
+                      {{ selectedIssue.final_score ? "EDIT & SAVE TO JIRA" : "SAVE TO JIRA" }}
                     </button>
                   </div>
 
@@ -644,7 +667,7 @@ async function reopenRoom() {
                         @click="saveFinalScore"
                         class="text-xs text-[#00fbff] hover:text-white font-bold tracking-widest"
                       >
-                        SAVE
+                        SAVE TO JIRA
                       </button>
                       <button
                         @click="isEditingScore = false"

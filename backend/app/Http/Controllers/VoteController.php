@@ -112,11 +112,8 @@ class VoteController extends Controller
 
         event(new VotesRevealed($issue, Auth::user(), $votes->toArray(), $average));
 
-        if ($issue->final_score) {
-            $jiraService = new JiraService(Auth::user());
-            $jiraService->setUser(Auth::user());
-            $jiraService->updateStoryPoints($issue->jira_issue_key, $issue->final_score);
-        }
+        // Note: Jira is NOT updated automatically upon reveal anymore.
+        // It must be confirmed/updated manually by the moderator via updateFinalScore.
 
         return response()->json([
             'message' => 'Votes revealed',

@@ -110,7 +110,8 @@ class JiraService
     {
         $this->refreshTokenIfNeeded();
         
-        $fieldId = $this->user?->jira_story_points_field_id ?? $this->discoverStoryPointsField();
+        // Force rediscover to ensure we get "Story point estimate" if available
+        $fieldId = $this->discoverStoryPointsField();
         
         if (!$fieldId) {
             Log::error('Story Points field not found for user', ['user_id' => $this->user?->id]);
@@ -140,27 +141,29 @@ class JiraService
         
         $response = $this->request('GET', '/field');
         
+        $estimateFieldId = null;
+        $pointsFieldId = null;
+
         foreach ($response as $field) {
             $name = strtolower($field['name'] ?? '');
             $clauseNames = array_map('strtolower', $field['clauseNames'] ?? []);
             
-            if (
-                str_contains($name, 'story point') ||
-                str_contains($name, 'story points') ||
-                in_array('story points', $clauseNames) ||
-                in_array('story point estimate', $clauseNames)
-            ) {
-                $fieldId = $field['id'];
-                
-                if ($this->user) {
-                    $this->user->update(['jira_story_points_field_id' => $fieldId]);
+            if (str_contains($name, 'story point estimate') || in_array('story point estimate', $clauseNames)) {
+                $estimateFieldId = $field['id'];
+            } elseif (str_contains($name, 'story point') || in_array('story points', $clauseNames)) {
+                if (!$pointsFieldId) {
+                    $pointsFieldId = $field['id'];
                 }
-                
-                return $fieldId;
             }
         }
         
-        return null;
+        $fieldId = $estimateFieldId ?? $pointsFieldId;
+
+        if ($fieldId && $this->user) {
+            $this->user->update(['jira_story_points_field_id' => $fieldId]);
+        }
+        
+        return $fieldId;
     }
 
     public function parseIssueUrl(string $url): ?string

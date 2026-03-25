@@ -156,7 +156,13 @@ function setupEcho() {
     .listen(".votes.revealed", (data) => {
       if (selectedIssue.value && data.issue_id == selectedIssue.value.id) {
         selectedIssue.value.status = "revealed";
-        selectedIssue.value.final_score = data.final_score;
+        // Parse float and check if it's a whole number to remove decimal
+        let score = data.final_score;
+        if (score !== null) {
+          const parsed = parseFloat(score);
+          score = Number.isInteger(parsed) ? parsed : parsed.toFixed(1);
+        }
+        selectedIssue.value.final_score = score;
         revealedVotes.value = data.votes || [];
         isEditingScore.value = false;
       }
@@ -205,6 +211,14 @@ async function fetchRoom() {
       // Find if any issue is currently in voting status
       const activeIssue = room.value.issues.find((i) => i.status === "voting");
 
+      // Format final scores for all issues
+      room.value.issues.forEach((issue) => {
+        if (issue.final_score !== null) {
+          const parsed = parseFloat(issue.final_score);
+          issue.final_score = Number.isInteger(parsed) ? parsed : parsed.toFixed(1);
+        }
+      });
+
       if (activeIssue) {
         selectedIssue.value = activeIssue;
       } else {
@@ -220,6 +234,13 @@ async function fetchRoom() {
         const response = await api.get(`/api/rooms/${route.params.uuid}`);
         room.value = response.data;
         if (room.value.issues.length > 0) {
+          room.value.issues.forEach((issue) => {
+            if (issue.final_score !== null) {
+              const parsed = parseFloat(issue.final_score);
+              issue.final_score = Number.isInteger(parsed) ? parsed : parsed.toFixed(1);
+            }
+          });
+
           const activeIssue = room.value.issues.find((i) => i.status === "voting");
           if (activeIssue) {
             selectedIssue.value = activeIssue;

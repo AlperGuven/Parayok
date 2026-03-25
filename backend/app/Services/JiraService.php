@@ -119,15 +119,19 @@ class JiraService
         }
 
         try {
+            // Some Jira projects require Story Points to be integers or specifically formatted
+            // Convert to int if it's a whole number (e.g. 5.0 -> 5)
+            $formattedPoints = floor($points) == $points ? (int)$points : $points;
+
             $response = $this->request('PUT', "/issue/{$issueKey}", [
                 'fields' => [
-                    $fieldId => $points,
+                    $fieldId => $formattedPoints,
                 ],
             ]);
             
             Log::info('Jira Story Points updated successfully', [
                 'issue_key' => $issueKey,
-                'points' => $points,
+                'points' => $formattedPoints,
                 'field_id' => $fieldId
             ]);
             

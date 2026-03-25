@@ -168,8 +168,18 @@ class JiraService
                 ]);
             }
 
-            if (str_contains($name, 'story point estimate') || in_array('story point estimate', $clauseNames)) {
+            // Exactly match the field name we saw in the logs for this specific project
+            // Note: Jira error says "Field 'customfield_10118' cannot be set. It is not on the appropriate screen, or unknown."
+            // This means we are picking the WRONG field, or the field is not on the Edit/Create screen for this issue type.
+            // Let's prioritize the standard "Story point estimate" first, then "Story Points".
+            // If "Story point estimate" exists but fails, it might be a screen issue in Jira.
+            if ($name === 'story point estimate') {
                 $estimateFieldId = $field['id'];
+                break; // Prioritize exact match for "Story point estimate"
+            } elseif (str_contains($name, 'story point estimate') || in_array('story point estimate', $clauseNames)) {
+                $estimateFieldId = $field['id'];
+            } elseif ($name === 'story points') {
+                $pointsFieldId = $field['id'];
             } elseif (str_contains($name, 'story point') || in_array('story points', $clauseNames)) {
                 if (!$pointsFieldId) {
                     $pointsFieldId = $field['id'];

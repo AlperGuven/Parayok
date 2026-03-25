@@ -171,8 +171,14 @@ class VoteController extends Controller
             ->where('room_id', $room->id)
             ->firstOrFail();
 
+        // Convert to int if it's a whole number
+        $finalScore = $request->final_score;
+        if (floor($finalScore) == $finalScore) {
+            $finalScore = (int) $finalScore;
+        }
+
         $issue->update([
-            'final_score' => $request->final_score,
+            'final_score' => $finalScore,
         ]);
 
         // We can reuse the VotesRevealed event to broadcast the new final score to all clients
@@ -194,6 +200,10 @@ class VoteController extends Controller
         $average = $numericVotes->count() > 0 
             ? round($numericVotes->avg(), 1) 
             : null;
+
+        if ($average !== null && floor($average) == $average) {
+            $average = (int) $average;
+        }
 
         event(new VotesRevealed($issue, Auth::user(), $votes->toArray(), $average));
 
@@ -231,6 +241,12 @@ class VoteController extends Controller
 
         $mode = $sortedVotes->keys()->first();
 
-        return $mode !== null ? (float) $mode : null;
+        // Convert to integer if it's a whole number
+        $finalScore = $mode !== null ? (float) $mode : null;
+        if ($finalScore !== null && floor($finalScore) == $finalScore) {
+            return (int) $finalScore;
+        }
+
+        return $finalScore;
     }
 }

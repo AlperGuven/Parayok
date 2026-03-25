@@ -119,10 +119,16 @@ class JiraService
         }
 
         try {
-            $this->request('PUT', "/issue/{$issueKey}", [
+            $response = $this->request('PUT', "/issue/{$issueKey}", [
                 'fields' => [
                     $fieldId => $points,
                 ],
+            ]);
+            
+            Log::info('Jira Story Points updated successfully', [
+                'issue_key' => $issueKey,
+                'points' => $points,
+                'field_id' => $fieldId
             ]);
             
             return true;
@@ -130,6 +136,7 @@ class JiraService
             Log::error('Failed to update story points', [
                 'issue_key' => $issueKey,
                 'error' => $e->getMessage(),
+                'field_id' => $fieldId
             ]);
             return false;
         }
@@ -148,6 +155,15 @@ class JiraService
             $name = strtolower($field['name'] ?? '');
             $clauseNames = array_map('strtolower', $field['clauseNames'] ?? []);
             
+            // Log the exact fields we find that might be relevant to help debug
+            if (str_contains($name, 'story') || str_contains($name, 'point') || str_contains($name, 'estimate')) {
+                Log::debug('Found potential Jira field', [
+                    'id' => $field['id'],
+                    'name' => $field['name'],
+                    'clauseNames' => $field['clauseNames'] ?? []
+                ]);
+            }
+
             if (str_contains($name, 'story point estimate') || in_array('story point estimate', $clauseNames)) {
                 $estimateFieldId = $field['id'];
             } elseif (str_contains($name, 'story point') || in_array('story points', $clauseNames)) {

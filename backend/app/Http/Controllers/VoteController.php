@@ -29,12 +29,16 @@ class VoteController extends Controller
             return response()->json(['message' => 'Voting is not active for this issue'], 400);
         }
 
-        $existingVote = Vote::where('issue_id', $issue->id)
-            ->where('user_id', Auth::id())
-            ->first();
+        if ($request->value === null) {
+            // Un-vote
+            Vote::where('issue_id', $issue->id)
+                ->where('user_id', Auth::id())
+                ->delete();
+            
+            event(new VoteCast($issue, Auth::user(), false));
+            return response()->json(['message' => 'Vote removed successfully']);
+        }
 
-        // If user already voted and is just changing their vote, we don't need to increment hasVoted count
-        // But we always update the value
         Vote::updateOrCreate(
             [
                 'issue_id' => $issue->id,
@@ -45,10 +49,7 @@ class VoteController extends Controller
             ]
         );
 
-        // We only care if they have voted at all to trigger the event
-        $hasVoted = true;
-
-        event(new VoteCast($issue, Auth::user(), $hasVoted));
+        event(new VoteCast($issue, Auth::user(), true));
 
         return response()->json(['message' => 'Vote cast successfully']);
     }

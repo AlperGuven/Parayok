@@ -14,7 +14,7 @@ class VoteRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'value' => 'required',
+            'value' => 'nullable',
         ];
     }
 }

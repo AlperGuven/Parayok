@@ -244,14 +244,22 @@ async function fetchRoom() {
 async function castVote(value) {
   if (!selectedIssue.value || !room.value) return;
 
-  // If clicking the same card again, maybe un-vote? (Optional, but good UX)
-  // Let's just allow changing vote for now as requested.
-
-  currentVote.value = value;
-  try {
-    await api.post(`/api/rooms/${room.value.uuid}/issues/${selectedIssue.value.id}/vote`, { value });
-  } catch (e) {
-    console.error("Failed to cast vote:", e);
+  if (currentVote.value === value) {
+    // Un-vote
+    currentVote.value = null;
+    try {
+      await api.post(`/api/rooms/${room.value.uuid}/issues/${selectedIssue.value.id}/vote`, { value: null });
+    } catch (e) {
+      console.error("Failed to un-vote:", e);
+    }
+  } else {
+    // Cast new vote
+    currentVote.value = value;
+    try {
+      await api.post(`/api/rooms/${room.value.uuid}/issues/${selectedIssue.value.id}/vote`, { value });
+    } catch (e) {
+      console.error("Failed to cast vote:", e);
+    }
   }
 }
 

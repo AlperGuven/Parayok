@@ -553,12 +553,36 @@ async function reopenRoom() {
         <div v-if="selectedIssue" class="flex-1 overflow-y-auto p-8 relative z-10 custom-scrollbar">
           <div class="flex justify-between items-start mb-8 border-b border-[#fdfc04] border-opacity-30 pb-6">
             <div class="flex-1 mr-8">
-              <h2 class="text-3xl font-display font-bold text-white mb-4 tracking-widest uppercase">
-                <span class="text-[#fdfc04] mr-2">{{ selectedIssue.jira_issue_key }}:</span> {{ selectedIssue.summary }}
+              <h2
+                class="text-3xl font-display font-bold text-white mb-4 tracking-widest uppercase flex items-center gap-3"
+              >
+                <a
+                  :href="selectedIssue.jira_url"
+                  target="_blank"
+                  class="text-[#fdfc04] hover:text-white transition-colors flex items-center gap-2 group"
+                  title="Open in Jira"
+                >
+                  <span>{{ selectedIssue.jira_issue_key }}:</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5 opacity-50 group-hover:opacity-100"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    />
+                  </svg>
+                </a>
+                <span class="flex-1">{{ selectedIssue.summary }}</span>
               </h2>
               <div
                 v-if="selectedIssue.description"
-                class="text-gray-300 text-lg font-sans whitespace-pre-wrap bg-black border border-gray-800 p-6 relative leading-relaxed"
+                class="text-gray-300 text-lg font-sans whitespace-pre-wrap bg-black border border-gray-800 p-8 relative leading-relaxed max-h-[400px] overflow-y-auto custom-scrollbar"
               >
                 <!-- Corner decorations for description -->
                 <div class="absolute top-0 left-0 w-3 h-3 border-t border-l border-[#fdfc04] opacity-50"></div>
@@ -696,7 +720,9 @@ async function reopenRoom() {
                   <div v-else class="flex flex-col items-center gap-4 mt-2">
                     <input
                       v-model="editedScore"
-                      type="text"
+                      type="number"
+                      step="1"
+                      min="0"
                       class="w-32 text-center text-5xl font-bold text-[#00fbff] font-display bg-black border border-[#fdfc04] focus:outline-none focus:shadow-[0_0_10px_rgba(253,252,4,0.3)] p-2"
                       @keyup.enter="saveFinalScore"
                       @keyup.esc="isEditingScore = false"

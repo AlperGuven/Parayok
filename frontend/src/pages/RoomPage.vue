@@ -552,7 +552,7 @@ async function reopenRoom() {
 
         <div v-if="selectedIssue" class="flex-1 overflow-y-auto p-8 relative z-10 custom-scrollbar">
           <div class="flex justify-between items-start mb-8 border-b border-[#fdfc04] border-opacity-30 pb-6">
-            <div class="flex-1 mr-8">
+            <div class="flex-1">
               <h2
                 class="text-3xl font-display font-bold text-white mb-4 tracking-widest uppercase flex items-center gap-3"
               >
@@ -582,7 +582,7 @@ async function reopenRoom() {
               </h2>
               <div
                 v-if="selectedIssue.description"
-                class="text-gray-300 text-lg font-sans whitespace-pre-wrap bg-black border border-gray-800 p-8 relative leading-relaxed max-h-[400px] overflow-y-auto custom-scrollbar"
+                class="text-gray-300 text-lg font-sans whitespace-pre-wrap bg-black border border-gray-800 p-8 relative leading-relaxed max-h-[480px] overflow-y-auto custom-scrollbar"
               >
                 <!-- Corner decorations for description -->
                 <div class="absolute top-0 left-0 w-3 h-3 border-t border-l border-[#fdfc04] opacity-50"></div>

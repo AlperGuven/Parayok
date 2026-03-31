@@ -521,12 +521,16 @@ async function reopenRoom() {
           </div>
         </div>
 
-        <div class="p-6 border-t border-[#fdfc04] border-opacity-30 bg-black">
+        <div class="p-6 pe-0 border-t border-[#fdfc04] border-opacity-30 bg-black">
           <h3 class="text-sm font-bold text-[#fdfc04] mb-4 uppercase tracking-widest">
             PARTICIPANTS ({{ room?.participants?.length }})
           </h3>
           <div class="space-y-3 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
-            <div v-for="participant in room?.participants" :key="participant.id" class="flex items-center gap-3">
+            <div
+              v-for="participant in room?.participants"
+              :key="participant.id"
+              class="flex items-center gap-3 ml-1 mt-1"
+            >
               <div
                 class="w-8 h-8 flex items-center justify-center text-xs font-bold text-[#041628] bg-[#00fbff] border border-[#00fbff] shadow-[0_0_10px_rgba(0,251,255,0.3)] transform rotate-45"
               >

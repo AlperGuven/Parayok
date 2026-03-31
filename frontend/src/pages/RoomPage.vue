@@ -4,6 +4,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/authStore";
 import { useEcho } from "@/composables/useEcho";
 import api from "@/services/api";
+import iceBreakerQuestions from "@/assets/questions/questions.json";
 
 const route = useRoute();
 const router = useRouter();
@@ -21,10 +22,19 @@ const revealedVotes = ref([]);
 const isCopied = ref(false);
 const isEditingScore = ref(false);
 const editedScore = ref("");
+const currentIceBreaker = ref("");
 
 const cards = ["1", "2", "3", "5", "8", "13", "21", "?", "☕"];
 
+function pickRandomIceBreaker() {
+  if (iceBreakerQuestions.length > 0) {
+    const randomIndex = Math.floor(Math.random() * iceBreakerQuestions.length);
+    currentIceBreaker.value = iceBreakerQuestions[randomIndex];
+  }
+}
+
 onMounted(async () => {
+  pickRandomIceBreaker();
   await authStore.fetchUser();
   if (!authStore.isAuthenticated) {
     router.push({ path: "/", query: { redirect: route.fullPath } });
@@ -780,15 +790,39 @@ async function reopenRoom() {
           </div>
         </div>
 
-        <div v-else class="flex-1 flex flex-col items-center justify-center text-gray-500 relative z-10">
-          <div class="w-16 h-16 border border-gray-700 rotate-45 flex items-center justify-center mb-4">
-            <div class="w-12 h-12 border border-gray-700"></div>
+        <div v-else class="flex-1 flex flex-col items-center justify-center text-gray-500 relative z-10 p-8">
+          <div v-if="room?.issues?.length === 0" class="flex flex-col items-center text-center max-w-2xl">
+            <div class="mb-12">
+              <h3 class="text-[#00fbff] font-display text-xl tracking-widest uppercase mb-4 opacity-80">ICE BREAKER</h3>
+              <p class="text-3xl text-white font-sans leading-relaxed mb-8 relative px-12">
+                <span class="absolute left-0 top-0 text-5xl text-[#fdfc04] opacity-30 font-serif">"</span>
+                {{ currentIceBreaker }}
+                <span class="absolute right-0 bottom-[-20px] text-5xl text-[#fdfc04] opacity-30 font-serif">"</span>
+              </p>
+              <button
+                @click="pickRandomIceBreaker"
+                class="px-6 py-2 border border-[#00fbff] text-[#00fbff] hover:bg-[#00fbff] hover:text-[#041628] transition-colors uppercase tracking-widest text-xs font-bold"
+              >
+                NEXT QUESTION
+              </button>
+            </div>
+
+            <div class="w-full h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent my-8"></div>
+
+            <p class="font-display tracking-widest uppercase mb-4 text-gray-400">WAITING FOR ISSUES TO BE ADDED...</p>
+            <p v-if="isCreator" class="text-sm font-sans text-gray-500">Use the "+ ADD" button on the left to start.</p>
           </div>
-          <p class="font-display tracking-widest uppercase mb-8">SELECT AN ISSUE TO START</p>
+
+          <div v-else class="flex flex-col items-center">
+            <div class="w-16 h-16 border border-gray-700 rotate-45 flex items-center justify-center mb-4">
+              <div class="w-12 h-12 border border-gray-700"></div>
+            </div>
+            <p class="font-display tracking-widest uppercase mb-8">SELECT AN ISSUE TO START</p>
+          </div>
 
           <button
             @click="router.push('/dashboard')"
-            class="px-6 py-3 border border-gray-700 text-gray-400 hover:text-[#fdfc04] hover:border-[#fdfc04] transition-all uppercase tracking-widest font-sans font-bold"
+            class="mt-8 px-6 py-3 border border-gray-700 text-gray-400 hover:text-[#fdfc04] hover:border-[#fdfc04] transition-all uppercase tracking-widest font-sans font-bold"
           >
             EXIT ROOM
           </button>

@@ -3,7 +3,7 @@ import { ref, onMounted, onUnmounted, computed, triggerRef, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/authStore";
 import { useEcho } from "@/composables/useEcho";
-import api from "@/services/api";
+import roomService from "@/services/RoomService";
 import iceBreakerQuestions from "@/assets/questions/questions.json";
 
 const route = useRoute();
@@ -214,8 +214,8 @@ function setupEcho() {
 
 async function fetchRoom() {
   try {
-    const response = await api.get(`/api/rooms/${route.params.uuid}`);
-    room.value = response.data;
+    const data = await roomService.getRoom(route.params.uuid);
+    room.value = data;
 
     if (room.value.issues.length > 0) {
       // Find if any issue is currently in voting status
@@ -239,10 +239,10 @@ async function fetchRoom() {
     // If user is not a participant, try to join
     if (e.response?.status === 403 && e.response?.data?.message === "You are not a participant of this room") {
       try {
-        await api.post(`/api/rooms/${route.params.uuid}/join`);
+        await roomService.joinRoom(route.params.uuid);
         // Retry fetching room after joining
-        const response = await api.get(`/api/rooms/${route.params.uuid}`);
-        room.value = response.data;
+        const data = await roomService.getRoom(route.params.uuid);
+        room.value = data;
         if (room.value.issues.length > 0) {
           room.value.issues.forEach((issue) => {
             if (issue.final_score !== null) {
@@ -279,7 +279,7 @@ async function castVote(value) {
     // Un-vote
     currentVote.value = null;
     try {
-      await api.post(`/api/rooms/${room.value.uuid}/issues/${selectedIssue.value.id}/vote`, { value: null });
+      await roomService.castVote(room.value.uuid, selectedIssue.value.id, null);
     } catch (e) {
       console.error("Failed to un-vote:", e);
     }
@@ -287,7 +287,7 @@ async function castVote(value) {
     // Cast new vote
     currentVote.value = value;
     try {
-      await api.post(`/api/rooms/${room.value.uuid}/issues/${selectedIssue.value.id}/vote`, { value });
+      await roomService.castVote(room.value.uuid, selectedIssue.value.id, value);
     } catch (e) {
       console.error("Failed to cast vote:", e);
     }
@@ -298,7 +298,7 @@ async function startVoting() {
   if (!selectedIssue.value || !room.value) return;
   try {
     const issueId = selectedIssue.value.id; // Store current issue ID
-    await api.post(`/api/rooms/${room.value.uuid}/issues/${issueId}/start-voting`);
+    await roomService.startVoting(room.value.uuid, issueId);
     await fetchRoom();
 
     // Restore selected issue
@@ -316,8 +316,8 @@ async function revealVotes() {
   if (!selectedIssue.value || !room.value) return;
   try {
     const issueId = selectedIssue.value.id; // Store current issue ID
-    const response = await api.post(`/api/rooms/${room.value.uuid}/issues/${issueId}/reveal`);
-    revealedVotes.value = response.data.votes || [];
+    const data = await roomService.revealVotes(room.value.uuid, issueId);
+    revealedVotes.value = data.votes || [];
     await fetchRoom();
 
     // Restore selected issue
@@ -334,7 +334,7 @@ async function resetVoting() {
   if (!selectedIssue.value || !room.value) return;
   try {
     const issueId = selectedIssue.value.id; // Store current issue ID
-    await api.post(`/api/rooms/${room.value.uuid}/issues/${issueId}/reset`);
+    await roomService.resetVoting(room.value.uuid, issueId);
     currentVote.value = null;
     isEditingScore.value = false;
     await fetchRoom();
@@ -352,7 +352,7 @@ async function resetVoting() {
 async function addIssue() {
   if (!newIssueUrl.value.trim() || !room.value) return;
   try {
-    await api.post(`/api/rooms/${room.value.uuid}/issues/from-url`, { url: newIssueUrl.value });
+    await roomService.addIssueFromUrl(room.value.uuid, newIssueUrl.value);
     showAddIssue.value = false;
     newIssueUrl.value = "";
     await fetchRoom();
@@ -364,7 +364,7 @@ async function addIssue() {
 async function finishRoom() {
   if (!room.value) return;
   try {
-    await api.post(`/api/rooms/${room.value.uuid}/complete`);
+    await roomService.completeRoom(room.value.uuid);
     router.push("/dashboard");
   } catch (e) {
     console.error("Failed to finish room:", e);
@@ -396,7 +396,7 @@ const isGuest = computed(() => {
 async function exitRoom() {
   if (room.value) {
     try {
-      await api.post(`/api/rooms/${room.value.uuid}/leave`);
+      await roomService.leaveRoom(room.value.uuid);
     } catch (e) {
       console.error("Failed to leave room:", e);
     }
@@ -414,9 +414,7 @@ async function saveFinalScore() {
   if (!selectedIssue.value || !room.value || !editedScore.value) return;
   try {
     const issueId = selectedIssue.value.id;
-    await api.post(`/api/rooms/${room.value.uuid}/issues/${issueId}/update-score`, {
-      final_score: editedScore.value,
-    });
+    await roomService.updateFinalScore(room.value.uuid, issueId, editedScore.value);
     isEditingScore.value = false;
   } catch (e) {
     console.error("Failed to update score:", e);
@@ -430,7 +428,7 @@ function startEditingScore() {
 async function reopenRoom() {
   if (!room.value) return;
   try {
-    await api.post(`/api/rooms/${room.value.uuid}/reopen`);
+    await roomService.reopenRoom(room.value.uuid);
     await fetchRoom();
   } catch (e) {
     console.error("Failed to reopen room:", e);

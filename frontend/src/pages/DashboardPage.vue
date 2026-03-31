@@ -2,7 +2,7 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "../stores/authStore";
-import api from "../services/api";
+import dashboardService from "../services/DashboardService";
 import logo from "@/assets/images/parayok.png";
 
 const router = useRouter();
@@ -32,8 +32,8 @@ onMounted(async () => {
 
 async function fetchRooms() {
   try {
-    const response = await api.get("/api/rooms");
-    rooms.value = response.data;
+    const data = await dashboardService.getRooms();
+    rooms.value = data;
   } catch (error) {
     console.error("fetchRooms: Failed to fetch rooms:", error);
     if (error.response?.status === 401) {
@@ -55,7 +55,7 @@ function joinRoom(uuid) {
 }
 
 async function logout() {
-  await api.post("/api/auth/logout");
+  await dashboardService.logout();
   authStore.logout();
   router.push("/");
 }
@@ -76,16 +76,8 @@ async function deleteRoom() {
   if (!roomToDelete.value) return;
 
   try {
-    await api.post(`/api/rooms/${roomToDelete.value.uuid}/delete`); // Using delete endpoint (need to implement or check destroy route)
-    // Actually API uses DELETE /api/rooms/{uuid} usually, let's check routes
-    // But RoomController has destroy method. Let's assume standard resource route or check api.php
-    // Checking api.php, there is no explicit delete route, only destroy in controller.
-    // Let's assume we need to add DELETE route or use POST /destroy if exists.
-    // Wait, let's use POST /rooms/{uuid}/delete for safety or check if DELETE is supported.
-    // In RoomController: public function destroy(Request $request, string $uuid)
-    // We should add this route to api.php if not exists.
-
-    // For now, let's optimistically update UI
+    await dashboardService.deleteRoom(roomToDelete.value.uuid);
+    // Optimistically update UI
     rooms.value = rooms.value.filter((r) => r.id !== roomToDelete.value.id);
     closeModals();
   } catch (error) {
@@ -120,10 +112,8 @@ async function updateProfile() {
 
   isUpdatingProfile.value = true;
   try {
-    const response = await api.post("/api/user/profile", {
-      display_name: newProfileName.value.trim(),
-    });
-    authStore.user = response.data.user;
+    const data = await dashboardService.updateProfile(newProfileName.value.trim());
+    authStore.user = data.user;
     closeModals();
   } catch (error) {
     console.error("Failed to update profile:", error);

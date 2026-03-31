@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted } from "vue";
 import { useRouter } from "vue-router";
-import api from "../services/api";
+import authService from "../services/AuthService";
 import { useAuthStore } from "../stores/authStore";
 
 const router = useRouter();
@@ -14,15 +14,15 @@ onMounted(async () => {
 
   if (code) {
     try {
-      await api.get("/sanctum/csrf-cookie");
+      await authService.getCsrfCookie();
 
-      const response = await api.post("/api/auth/jira/callback", { code, state });
+      const data = await authService.handleJiraCallback(code, state);
 
-      if (response.data.user && response.data.token) {
-        authStore.setAuth(response.data.user, response.data.token);
-      } else if (response.data.user) {
+      if (data.user && data.token) {
+        authStore.setAuth(data.user, data.token);
+      } else if (data.user) {
         // Fallback for session auth if token is missing (shouldn't happen with new backend)
-        authStore.user = response.data.user;
+        authStore.user = data.user;
       }
 
       await new Promise((resolve) => setTimeout(resolve, 500));

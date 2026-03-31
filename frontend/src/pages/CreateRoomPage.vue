@@ -2,7 +2,7 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/authStore";
-import api from "@/services/api";
+import roomService from "@/services/RoomService";
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -21,11 +21,8 @@ async function createRoom() {
   error.value = "";
 
   try {
-    const response = await api.post("/api/rooms", { 
-      name: roomName.value,
-      voting_system: "fibonacci" // Default voting system
-    });
-    const uuid = response.data.uuid; // Use UUID from response
+    const data = await roomService.createRoom(roomName.value);
+    const uuid = data.uuid; // Use UUID from response
     router.push(`/room/${uuid}`);
   } catch (e: any) {
     error.value = e.response?.data?.message || "Failed to create room";

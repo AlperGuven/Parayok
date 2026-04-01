@@ -180,23 +180,65 @@ class IssueController extends Controller
         return $jiraDescription['content'] ?? $jiraDescription['plain']['value'] ?? null;
     }
 
-    private function extractTextFromAdf(array $content): string
+    private function extractTextFromAdf(array $content, int $listDepth = 0): string
     {
         $text = '';
         
         foreach ($content as $block) {
-            if (isset($block['type']) && $block['type'] === 'paragraph') {
-                if (isset($block['content'])) {
+            $type = $block['type'] ?? '';
+
+            if (isset($block['content'])) {
+                if ($type === 'codeBlock') {
+                    $text .= "```\n";
                     foreach ($block['content'] as $inline) {
                         if (isset($inline['text'])) {
                             $text .= $inline['text'];
                         }
                     }
-                    $text .= "\n";
+                    $text .= "\n```\n\n";
+                } elseif ($type === 'bulletList' || $type === 'orderedList') {
+                    $listType = $type;
+                    foreach ($block['content'] as $index => $listItem) {
+                        if (isset($listItem['content'])) {
+                            $prefix = $listType === 'orderedList' ? ($index + 1) . ". " : "• ";
+                            $indent = str_repeat("  ", $listDepth);
+                            $itemText = $this->extractTextFromAdf($listItem['content'], $listDepth + 1);
+                            $text .= $indent . $prefix . ltrim($itemText) . "\n";
+                        }
+                    }
+                    if ($listDepth === 0) {
+                        $text .= "\n";
+                    }
+                } elseif ($type === 'heading') {
+                    $level = $block['attrs']['level'] ?? 1;
+                    $text .= str_repeat('#', $level) . " ";
+                    foreach ($block['content'] as $inline) {
+                        if (isset($inline['text'])) {
+                            $text .= $inline['text'];
+                        }
+                    }
+                    $text .= "\n\n";
+                } else {
+                    // Paragraphs, panels, blockquotes, etc.
+                    $blockText = '';
+                    foreach ($block['content'] as $inline) {
+                        if (isset($inline['type']) && $inline['type'] === 'text') {
+                            $blockText .= $inline['text'] ?? '';
+                        } elseif (isset($inline['type']) && $inline['type'] === 'hardBreak') {
+                            $blockText .= "\n";
+                        } elseif (isset($inline['content'])) {
+                            // Recursively extract if it's a nested structure
+                            $blockText .= $this->extractTextFromAdf([$inline], $listDepth);
+                        }
+                    }
+                    $text .= $blockText . "\n\n";
                 }
+            } elseif (isset($block['text'])) {
+                $text .= $block['text'];
             }
         }
         
-        return trim($text);
+        // Remove trailing newlines but ensure there's not too much whitespace
+        return rtrim($text);
     }
 }

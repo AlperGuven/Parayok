@@ -410,11 +410,12 @@ async function exitRoom() {
   }
 }
 
-async function saveFinalScore() {
-  if (!selectedIssue.value || !room.value || !editedScore.value) return;
+async function saveFinalScore(scoreToSave) {
+  if (!selectedIssue.value || !room.value || scoreToSave === null || scoreToSave === undefined || scoreToSave === "")
+    return;
   try {
     const issueId = selectedIssue.value.id;
-    await roomService.updateFinalScore(room.value.uuid, issueId, editedScore.value);
+    await roomService.updateFinalScore(room.value.uuid, issueId, scoreToSave);
     isEditingScore.value = false;
   } catch (e) {
     console.error("Failed to update score:", e);
@@ -708,25 +709,22 @@ async function reopenRoom() {
                     >
                       {{ selectedIssue.final_score || "?" }}
                     </p>
-                    <button
-                      v-if="isCreator && room?.status !== 'completed'"
-                      @click="startEditingScore"
-                      class="absolute top-4 right-4 text-gray-500 hover:text-[#fdfc04] opacity-0 group-hover:opacity-100 transition-opacity"
-                      title="Edit and Save to Jira"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path
-                          d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
-                        />
-                      </svg>
-                    </button>
-                    <button
-                      v-if="isCreator && room?.status !== 'completed'"
-                      @click="startEditingScore"
-                      class="mt-6 px-4 py-2 border border-[#00fbff] text-[#00fbff] hover:bg-[#00fbff] hover:text-[#041628] text-xs font-bold tracking-widest transition-colors uppercase"
-                    >
-                      {{ selectedIssue.final_score ? "EDIT & SAVE TO JIRA" : "SAVE TO JIRA" }}
-                    </button>
+                    <div class="mt-6 flex justify-center gap-3">
+                      <button
+                        v-if="isCreator && room?.status !== 'completed'"
+                        @click="startEditingScore"
+                        class="px-4 py-2 border border-gray-500 text-gray-400 hover:text-white hover:border-white text-xs font-bold tracking-widest transition-colors uppercase"
+                      >
+                        EDIT
+                      </button>
+                      <button
+                        v-if="isCreator && room?.status !== 'completed'"
+                        @click="saveFinalScore(selectedIssue.final_score)"
+                        class="px-4 py-2 border border-[#00fbff] text-[#00fbff] hover:bg-[#00fbff] hover:text-[#041628] text-xs font-bold tracking-widest transition-colors uppercase"
+                      >
+                        SAVE TO JIRA
+                      </button>
+                    </div>
                   </div>
 
                   <div v-else class="flex flex-col items-center gap-4 mt-2">
@@ -735,14 +733,14 @@ async function reopenRoom() {
                       type="number"
                       step="1"
                       min="0"
-                      class="w-32 text-center text-5xl font-bold text-[#00fbff] font-display bg-black border border-[#fdfc04] focus:outline-none focus:shadow-[0_0_10px_rgba(253,252,4,0.3)] p-2"
-                      @keyup.enter="saveFinalScore"
+                      class="w-32 text-center text-5xl font-bold text-[#00fbff] font-display bg-black border border-[#fdfc04] focus:outline-none focus:shadow-[0_0_10px_rgba(253,252,4,0.3)] p-2 hide-arrows"
+                      @keyup.enter="saveFinalScore(editedScore)"
                       @keyup.esc="isEditingScore = false"
                       autofocus
                     />
                     <div class="flex gap-2">
                       <button
-                        @click="saveFinalScore"
+                        @click="saveFinalScore(editedScore)"
                         class="text-xs text-[#00fbff] hover:text-white font-bold tracking-widest"
                       >
                         SAVE TO JIRA

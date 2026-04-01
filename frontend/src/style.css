@@ -115,6 +115,16 @@ h1, h2, h3, h4, h5, h6 {
   color: rgba(253, 252, 4, 0.5);
 }
 
+/* Hide number input arrows */
+.hide-arrows::-webkit-outer-spin-button,
+.hide-arrows::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.hide-arrows {
+  -moz-appearance: textfield;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

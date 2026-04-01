@@ -567,7 +567,7 @@ async function reopenRoom() {
           <div class="flex justify-between items-start mb-8 border-b border-[#fdfc04] border-opacity-30 pb-6">
             <div class="flex-1">
               <h2
-                class="text-3xl font-display font-bold text-white mb-4 tracking-widest uppercase flex items-center gap-3"
+                class="text-2xl font-display font-bold text-white mb-4 tracking-widest uppercase flex items-center gap-3"
               >
                 <a
                   :href="selectedIssue.jira_url"

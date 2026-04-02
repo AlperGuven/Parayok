@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted, computed, triggerRef, watch } from "vue";
+import { ref, onMounted, onUnmounted, computed, triggerRef, watch, nextTick } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/authStore";
 import { useEcho } from "@/composables/useEcho";
@@ -23,6 +23,14 @@ const isCopied = ref(false);
 const isEditingScore = ref(false);
 const editedScore = ref("");
 const currentIceBreaker = ref("");
+const issuesListRef = ref(null);
+
+const scrollToBottom = async () => {
+  await nextTick();
+  if (issuesListRef.value) {
+    issuesListRef.value.scrollTop = issuesListRef.value.scrollHeight;
+  }
+};
 
 const cards = ["1", "2", "3", "5", "8", "13", "21", "?", "☕"];
 
@@ -204,6 +212,7 @@ function setupEcho() {
           final_score: null,
         });
         triggerRef(room);
+        scrollToBottom();
       }
     })
     .listen(".room.deleted", () => {
@@ -356,6 +365,7 @@ async function addIssue() {
     showAddIssue.value = false;
     newIssueUrl.value = "";
     await fetchRoom();
+    scrollToBottom();
   } catch (e) {
     error.value = e.response?.data?.message || "Failed to add issue";
   }
@@ -472,60 +482,69 @@ async function reopenRoom() {
           </div>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-6 custom-scrollbar">
-          <div class="flex items-center justify-between mb-6">
-            <h3 class="text-sm font-bold text-[#fdfc04] uppercase tracking-widest">ISSUES</h3>
-            <button
-              @click="showAddIssue = true"
-              class="text-md text-[#00fbff] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider font-bold"
-              :disabled="room?.status === 'completed'"
-              v-if="isCreator"
-            >
-              + ADD
-            </button>
-          </div>
-
-          <div v-if="showAddIssue" class="mb-6 art-deco-card p-4">
-            <input
-              v-model="newIssueUrl"
-              type="text"
-              placeholder="PASTE JIRA URL..."
-              class="w-full art-deco-input mb-4 text-sm"
-              @keyup.enter="addIssue"
-            />
-            <div class="flex gap-2">
-              <button @click="addIssue" class="flex-1 py-2 art-deco-button primary text-xs font-bold">ADD</button>
+        <div class="flex-1 flex flex-col min-h-0">
+          <div class="p-6 pb-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-bold text-[#fdfc04] uppercase tracking-widest">ISSUES</h3>
               <button
-                @click="showAddIssue = false"
-                class="px-3 py-2 text-xs text-gray-400 hover:text-white uppercase tracking-wider"
+                @click="showAddIssue = true"
+                class="text-md text-[#00fbff] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider font-bold"
+                :disabled="room?.status === 'completed'"
+                v-if="isCreator"
               >
-                CANCEL
+                + ADD
               </button>
+            </div>
+
+            <div v-if="showAddIssue" class="mt-6 art-deco-card p-4">
+              <input
+                v-model="newIssueUrl"
+                type="text"
+                placeholder="PASTE JIRA URL..."
+                class="w-full art-deco-input mb-4 text-sm"
+                @keyup.enter="addIssue"
+              />
+              <div class="flex gap-2">
+                <button @click="addIssue" class="flex-1 py-2 art-deco-button primary text-xs font-bold">ADD</button>
+                <button
+                  @click="showAddIssue = false"
+                  class="px-3 py-2 text-xs text-gray-400 hover:text-white uppercase tracking-wider"
+                >
+                  CANCEL
+                </button>
+              </div>
             </div>
           </div>
 
-          <div class="space-y-3">
-            <div
-              v-for="issue in room?.issues"
-              :key="issue.id"
-              :class="[
-                'p-4 border transition-all duration-300 relative group',
-                selectedIssue?.id === issue.id
-                  ? 'bg-black border-[#fdfc04] shadow-[0_0_10px_rgba(253,252,4,0.2)]'
-                  : 'bg-transparent border-gray-800 hover:border-[#fdfc04] hover:border-opacity-50',
-              ]"
-              @click="selectedIssue = issue"
-            >
-              <div class="flex items-center justify-between mb-1">
-                <span class="font-display font-bold text-sm text-white tracking-wide">{{ issue.jira_issue_key }}</span>
-                <span v-if="issue.final_score" class="text-lg font-bold text-[#00fbff] font-display">
-                  {{ issue.final_score }}
-                </span>
-              </div>
-              <p class="text-xs text-gray-400 truncate font-sans">{{ issue.summary }}</p>
+          <div class="flex-1 overflow-y-auto px-6 pb-6 custom-scrollbar" ref="issuesListRef">
+            <div class="space-y-3">
+              <div
+                v-for="issue in room?.issues"
+                :key="issue.id"
+                :class="[
+                  'p-4 border transition-all duration-300 relative group cursor-pointer',
+                  selectedIssue?.id === issue.id
+                    ? 'bg-black border-[#fdfc04] shadow-[0_0_10px_rgba(253,252,4,0.2)]'
+                    : 'bg-transparent border-gray-800 hover:border-[#fdfc04] hover:border-opacity-50',
+                ]"
+                @click="selectedIssue = issue"
+              >
+                <div class="flex items-center justify-between mb-1">
+                  <span class="font-display font-bold text-sm text-white tracking-wide">{{
+                    issue.jira_issue_key
+                  }}</span>
+                  <span v-if="issue.final_score" class="text-lg font-bold text-[#00fbff] font-display">
+                    {{ issue.final_score }}
+                  </span>
+                </div>
+                <p class="text-xs text-gray-400 truncate font-sans">{{ issue.summary }}</p>
 
-              <!-- Selection indicator -->
-              <div v-if="selectedIssue?.id === issue.id" class="absolute left-0 top-0 bottom-0 w-1 bg-[#fdfc04]"></div>
+                <!-- Selection indicator -->
+                <div
+                  v-if="selectedIssue?.id === issue.id"
+                  class="absolute left-0 top-0 bottom-0 w-1 bg-[#fdfc04]"
+                ></div>
+              </div>
             </div>
           </div>
         </div>

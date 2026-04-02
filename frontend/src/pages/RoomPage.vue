@@ -1,4 +1,3 @@
-
 <script setup>
 import { ref, onMounted, onUnmounted, computed, triggerRef, watch, nextTick } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -561,9 +560,10 @@ async function reopenRoom() {
               class="flex items-center gap-3 ml-1 mt-1"
             >
               <div
-                class="w-8 h-8 flex items-center justify-center text-xs font-bold text-[#041628] bg-[#00fbff] border border-[#00fbff] shadow-[0_0_10px_rgba(0,251,255,0.3)] transform rotate-45"
+                class="w-8 h-8 rounded-full border-2 border-[#fdfc04] bg-[#00fbff] flex items-center justify-center text-[#041628] font-bold text-xs relative overflow-hidden"
               >
-                <span class="transform -rotate-45">{{ participant.display_name.charAt(0) }}</span>
+                <img v-if="participant.avatar_url" :src="participant.avatar_url" class="w-full h-full object-cover" />
+                <span v-else>{{ participant.display_name.charAt(0).toUpperCase() }}</span>
               </div>
               <span class="text-sm text-gray-300 truncate font-sans tracking-wide uppercase">{{
                 participant.display_name
@@ -615,7 +615,7 @@ async function reopenRoom() {
               </h2>
               <div
                 v-if="selectedIssue.description"
-                class="text-gray-300 text-lg font-sans whitespace-pre-wrap bg-black border border-gray-800 p-8 relative leading-relaxed max-h-[480px] overflow-y-auto custom-scrollbar"
+                class="text-gray-300 text-lg font-sans whitespace-pre-wrap bg-black border border-gray-800 p-8 relative leading-relaxed max-h-[500px] overflow-y-auto custom-scrollbar"
               >
                 <!-- Corner decorations for description -->
                 <div class="absolute top-0 left-0 w-3 h-3 border-t border-l border-[#fdfc04] opacity-50"></div>

@@ -1,0 +1,61 @@
+# Parayok - Complete Documentation
+
+## What is Parayok?
+Parayok is a specialized Agile Poker Planning application designed to eliminate the friction between a team's estimation process and their Jira issue tracker. Unlike generic planning poker tools where you manually type in ticket numbers and then manually copy the final estimate back to Jira, Parayok handles the entire flow directly through Jira's API.
+
+## Core Features & Workflow
+
+### 1. Jira Authentication
+Users authenticate using Jira OAuth 2.0 (3LO). This grants Parayok permission to read issue details (Summary, Description, current status) and write back the final Story Point Estimate.
+
+### 2. Room Management
+- **Creation**: An authenticated user (the "Creator" or "Manager") creates a room. They can choose a voting scale (e.g., Fibonacci: 1, 2, 3, 5, 8, 13, 21).
+- **Joining**: The Creator can copy the room link and share it. Other authenticated users can join. Non-Jira users (Guests) can also join by simply entering a display name.
+- **Real-Time Presence**: The sidebar displays all online participants using their Jira avatars (or initials for guests).
+
+### 3. Adding Issues
+The Creator pastes a Jira URL (e.g., `https://your-domain.atlassian.net/browse/PROJ-123`). Parayok fetches the issue data.
+- **ADF Parsing**: Jira's Atlassian Document Format (ADF) descriptions are parsed into readable Markdown/Text, supporting code blocks, lists, and headings.
+
+### 4. Ice Breakers
+If a room has no active issues to vote on, Parayok displays randomized Ice Breaker questions in the center of the screen. The Creator can click "Next Question," which broadcasts the new question to all participants in the room via WebSockets.
+
+### 5. The Voting Process
+- **Pending**: The issue is loaded. Participants read the summary and description.
+- **Voting**: The Creator clicks "Start Voting". Participants select their estimate from the deck. Votes are hidden, but a checkmark or indicator shows *who* has voted.
+- **Revealed**: The Creator clicks "Reveal Votes". All cards flip over. Parayok calculates the most frequent vote (Mode) or average.
+- **Finalizing**: The Creator can accept the calculated score or edit it. Clicking "Save to Jira" updates the `Story point estimate` custom field in the original Jira ticket automatically.
+
+## Technical Architecture
+
+### Frontend (Client)
+- **Framework**: Vue 3 (using Composition API `<script setup>`).
+- **Build Tool**: Vite.
+- **State Management**: Pinia (stores user auth state, tokens).
+- **Styling**: TailwindCSS with custom Art Deco and futuristic cyberpunk influences (glowing borders, dark themes).
+- **API Communication**: Native Fetch API wrapped in custom Service classes (e.g., `RoomService.js`, `AuthService.js`).
+- **WebSockets**: Laravel Echo paired with Pusher-js (connecting to Laravel Reverb).
+
+### Backend (Server)
+- **Framework**: Laravel 11.
+- **Database**: MySQL/PostgreSQL (stores Users, Rooms, Issues, Votes, and Room Participants).
+- **Authentication**: Laravel Sanctum for API tokens. Socialite for Jira OAuth flow.
+- **Broadcasting**: Laravel Reverb. Dispatches events like `IceBreakerUpdated`, `VoteCast`, `VotesRevealed`.
+- **Jira Integration**: Custom `JiraService` that handles token refresh, discovers the correct "Story Point" custom field dynamically, and issues REST API calls to Atlassian.
+
+## Target Audience
+- Scrum Masters facilitating planning sessions.
+- Development Teams seeking to streamline their sprint planning.
+- Product Owners needing accurate, consensus-driven estimates directly reflected in their backlog.
+
+## API & Endpoints
+*Internal API endpoints include:*
+- `POST /api/auth/jira/callback`: Handles OAuth token exchange.
+- `GET /api/rooms/{uuid}`: Fetches room state.
+- `POST /api/rooms/{uuid}/issues/from-url`: Imports a Jira issue.
+- `POST /api/rooms/{uuid}/issues/{id}/vote`: Casts a vote.
+- `POST /api/rooms/{uuid}/ice-breaker`: Broadcasts a new Ice Breaker.
+
+## Contact & Links
+- **Website**: https://parayok.space
+- **Type**: Closed-source / SaaS (or Open Source if applicable).

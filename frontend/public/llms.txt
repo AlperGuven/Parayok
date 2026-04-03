@@ -1,0 +1,24 @@
+# Parayok
+
+> Agile Poker Planning Tool Integrated with Jira
+
+## Overview
+Parayok is a modern, real-time Scrum Poker planning application that connects directly with your Jira instance. It allows Agile teams to estimate story points seamlessly without manual data entry.
+
+## Key Features
+- **Jira OAuth Integration**: Login securely using Jira and fetch your profile.
+- **Real-Time Collaboration**: Vote on issues, see who is online, and reveal scores in real-time.
+- **Direct Jira Sync**: Once a team agrees on a story point estimate, the room manager can save the final score directly back to the Jira ticket.
+- **Guest Access**: External team members or stakeholders can join rooms via a link using just a display name.
+- **Ice Breakers**: While waiting for issues to be added, teams can answer randomized Ice Breaker questions synced across all participants.
+
+## Technology Stack
+- Frontend: Vue 3 (Composition API), Vite, TailwindCSS, Pinia.
+- Backend: Laravel 11, Sanctum (Auth), Reverb (WebSockets for real-time events).
+- Integration: Jira REST API (ADF parsing supported).
+
+## Links
+- Website: https://parayok.space
+
+## Contact
+For support or inquiries, please contact the maintainers.

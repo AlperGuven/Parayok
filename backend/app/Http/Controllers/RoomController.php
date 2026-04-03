@@ -96,6 +96,7 @@ class RoomController extends Controller
             'uuid' => $room->uuid,
             'name' => $room->name,
             'status' => $room->status,
+            'current_ice_breaker' => $room->current_ice_breaker,
             'created_by' => $room->created_by,
             'creator_name' => $room->creator->display_name,
             'estimation_scale' => json_decode($room->estimation_scale ?? '[]'),
@@ -209,6 +210,25 @@ class RoomController extends Controller
         $room->update(['status' => 'active']); // Or 'waiting'? active is fine.
 
         return response()->json(['message' => 'Room reopened']);
+    }
+
+    public function updateIceBreaker(Request $request, string $uuid)
+    {
+        $request->validate([
+            'ice_breaker' => 'required|string',
+        ]);
+
+        $room = Room::where('uuid', $uuid)->firstOrFail();
+        
+        if ($room->created_by !== $request->user()->id) {
+            return response()->json(['message' => 'Only room creator can update ice breaker'], 403);
+        }
+
+        $room->update(['current_ice_breaker' => $request->ice_breaker]);
+
+        event(new \App\Events\IceBreakerUpdated($room, $request->ice_breaker));
+
+        return response()->json(['message' => 'Ice breaker updated']);
     }
 
     public function destroy(Request $request, string $uuid)

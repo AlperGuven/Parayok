@@ -14,6 +14,7 @@ class Room extends Model
         'name',
         'created_by',
         'status',
+        'current_ice_breaker',
         'estimation_scale',
     ];
 

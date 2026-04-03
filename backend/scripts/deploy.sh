@@ -64,4 +64,8 @@ cp dist/*.ico ../backend/public/ 2>/dev/null || true
 cp dist/*.webmanifest ../backend/public/ 2>/dev/null || true
 cp dist/*.txt ../backend/public/ 2>/dev/null || true
 
+# Dosya izinlerini Nginx'in okuyabileceği şekilde ayarla (sudo ile çalıştırıldığında sorun olmaması için)
+chmod -R 755 ../backend/public/
+chown -R www-data:www-data ../backend/public/ 2>/dev/null || true
+
 echo "✅ Deploy başarıyla tamamlandı! (https://parayok.space)"

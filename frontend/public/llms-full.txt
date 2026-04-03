@@ -58,4 +58,4 @@ If a room has no active issues to vote on, Parayok displays randomized Ice Break
 
 ## Contact & Links
 - **Website**: https://parayok.space
-- **Type**: Closed-source / SaaS (or Open Source if applicable).
+- **Type**: Open-source: https://github.com/AlperGuven/Parayok / SaaS

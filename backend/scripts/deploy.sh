@@ -58,7 +58,10 @@ rm -f ../backend/public/index.html
 cp -r dist/assets ../backend/public/
 cp dist/index.html ../backend/public/
 
-# Favicon vb. diğer statik dosyalar varsa onları da kopyala (opsiyonel)
-# cp dist/favicon.ico ../backend/public/
+# Favicon, manifest ve llms.txt gibi root dizinde durması gereken statik dosyaları kopyala
+cp dist/*.png ../backend/public/ 2>/dev/null || true
+cp dist/*.ico ../backend/public/ 2>/dev/null || true
+cp dist/*.webmanifest ../backend/public/ 2>/dev/null || true
+cp dist/*.txt ../backend/public/ 2>/dev/null || true
 
 echo "✅ Deploy başarıyla tamamlandı! (https://parayok.space)"

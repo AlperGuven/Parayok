@@ -60,7 +60,7 @@ onMounted(async () => {
     if (room.value.current_ice_breaker) {
       currentIceBreaker.value = room.value.current_ice_breaker;
     } else if (isCreator.value) {
-      pickRandomIceBreaker();
+      await pickRandomIceBreaker();
     }
   }
 
@@ -263,6 +263,11 @@ async function fetchRoom() {
       } else {
         selectedIssue.value = room.value.issues[0];
       }
+    } else {
+      // Empty room logic - make sure ice breaker is set if available
+      if (room.value.current_ice_breaker) {
+        currentIceBreaker.value = room.value.current_ice_breaker;
+      }
     }
   } catch (e) {
     // If user is not a participant, try to join
@@ -285,6 +290,10 @@ async function fetchRoom() {
             selectedIssue.value = activeIssue;
           } else {
             selectedIssue.value = room.value.issues[0];
+          }
+        } else {
+          if (room.value.current_ice_breaker) {
+            currentIceBreaker.value = room.value.current_ice_breaker;
           }
         }
         setupEcho();

@@ -34,6 +34,11 @@ class RoomService {
     return response.data;
   }
 
+  async updateIceBreaker(uuid, question) {
+    const response = await api.post(`/api/rooms/${uuid}/ice-breaker`, { ice_breaker: question });
+    return response.data;
+  }
+
   async castVote(uuid, issueId, value) {
     const response = await api.post(`/api/rooms/${uuid}/issues/${issueId}/vote`, { value });
     return response.data;

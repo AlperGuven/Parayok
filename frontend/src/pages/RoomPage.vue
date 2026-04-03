@@ -34,21 +34,36 @@ const scrollToBottom = async () => {
 
 const cards = ["1", "2", "3", "5", "8", "13", "21", "?", "☕"];
 
-function pickRandomIceBreaker() {
-  if (iceBreakerQuestions.length > 0) {
+async function pickRandomIceBreaker() {
+  if (iceBreakerQuestions.length > 0 && room.value && isCreator.value) {
     const randomIndex = Math.floor(Math.random() * iceBreakerQuestions.length);
-    currentIceBreaker.value = iceBreakerQuestions[randomIndex];
+    const newQuestion = iceBreakerQuestions[randomIndex];
+    currentIceBreaker.value = newQuestion;
+
+    try {
+      await roomService.updateIceBreaker(room.value.uuid, newQuestion);
+    } catch (e) {
+      console.error("Failed to sync ice breaker:", e);
+    }
   }
 }
 
 onMounted(async () => {
-  pickRandomIceBreaker();
   await authStore.fetchUser();
   if (!authStore.isAuthenticated) {
     router.push({ path: "/", query: { redirect: route.fullPath } });
     return;
   }
   await fetchRoom();
+
+  if (room.value) {
+    if (room.value.current_ice_breaker) {
+      currentIceBreaker.value = room.value.current_ice_breaker;
+    } else if (isCreator.value) {
+      pickRandomIceBreaker();
+    }
+  }
+
   setupEcho();
 });
 
@@ -218,6 +233,11 @@ function setupEcho() {
     .listen(".room.deleted", () => {
       alert("This room has been deleted by the moderator.");
       exitRoom();
+    })
+    .listen(".ice.breaker.updated", (data) => {
+      if (data.ice_breaker) {
+        currentIceBreaker.value = data.ice_breaker;
+      }
     });
 }
 
@@ -816,6 +836,7 @@ async function reopenRoom() {
                 <span class="absolute right-0 bottom-[-20px] text-5xl text-[#fdfc04] opacity-30 font-serif">"</span>
               </p>
               <button
+                v-if="isCreator"
                 @click="pickRandomIceBreaker"
                 class="px-6 py-2 border border-[#00fbff] text-[#00fbff] hover:bg-[#00fbff] hover:text-[#041628] transition-colors uppercase tracking-widest text-xs font-bold"
               >

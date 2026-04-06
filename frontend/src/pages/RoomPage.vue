@@ -22,6 +22,8 @@ const revealedVotes = ref([]);
 const isCopied = ref(false);
 const isEditingScore = ref(false);
 const editedScore = ref("");
+const isSavingToJira = ref(false);
+const isSavedToJira = ref(false);
 const currentIceBreaker = ref("");
 const issuesListRef = ref(null);
 
@@ -452,12 +454,23 @@ async function exitRoom() {
 async function saveFinalScore(scoreToSave) {
   if (!selectedIssue.value || !room.value || scoreToSave === null || scoreToSave === undefined || scoreToSave === "")
     return;
+
+  isSavingToJira.value = true;
+
   try {
     const issueId = selectedIssue.value.id;
     await roomService.updateFinalScore(room.value.uuid, issueId, scoreToSave);
     isEditingScore.value = false;
+
+    // Show saved state
+    isSavingToJira.value = false;
+    isSavedToJira.value = true;
+    setTimeout(() => {
+      isSavedToJira.value = false;
+    }, 1500);
   } catch (e) {
     console.error("Failed to update score:", e);
+    isSavingToJira.value = false;
   }
 }
 
@@ -762,16 +775,38 @@ async function reopenRoom() {
                       <button
                         v-if="isCreator && room?.status !== 'completed'"
                         @click="startEditingScore"
-                        class="px-4 py-2 border border-gray-500 text-gray-400 hover:text-white hover:border-white text-xs font-bold tracking-widest transition-colors uppercase"
+                        class="px-4 py-2 border border-gray-500 text-gray-400 hover:text-white hover:border-white text-xs font-bold tracking-widest transition-colors uppercase disabled:opacity-50"
+                        :disabled="isSavingToJira || isSavedToJira"
                       >
                         EDIT
                       </button>
                       <button
                         v-if="isCreator && room?.status !== 'completed'"
                         @click="saveFinalScore(selectedIssue.final_score)"
-                        class="px-4 py-2 border border-[#00fbff] text-[#00fbff] hover:bg-[#00fbff] hover:text-[#041628] text-xs font-bold tracking-widest transition-colors uppercase"
+                        class="px-4 py-2 border text-xs font-bold tracking-widest transition-colors uppercase min-w-[140px] flex items-center justify-center gap-2"
+                        :class="[
+                          isSavedToJira
+                            ? 'border-green-500 bg-green-500 text-white'
+                            : 'border-[#00fbff] text-[#00fbff] hover:bg-[#00fbff] hover:text-[#041628]',
+                          { 'opacity-50 cursor-not-allowed': isSavingToJira },
+                        ]"
+                        :disabled="isSavingToJira || isSavedToJira"
                       >
-                        SAVE TO JIRA
+                        <span
+                          v-if="isSavingToJira"
+                          class="inline-block w-4 h-4 border-2 border-t-transparent border-current rounded-full animate-spin"
+                        ></span>
+                        <svg
+                          v-else-if="isSavedToJira"
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        {{ isSavedToJira ? "SAVED" : isSavingToJira ? "SAVING..." : "SAVE TO JIRA" }}
                       </button>
                     </div>
                   </div>
@@ -790,13 +825,35 @@ async function reopenRoom() {
                     <div class="flex gap-2">
                       <button
                         @click="saveFinalScore(editedScore)"
-                        class="text-xs text-[#00fbff] hover:text-white font-bold tracking-widest"
+                        class="text-xs font-bold tracking-widest flex items-center justify-center gap-2 px-3 py-2 border rounded-sm transition-colors min-w-[120px]"
+                        :class="[
+                          isSavedToJira
+                            ? 'border-green-500 bg-green-500 text-white'
+                            : 'border-[#00fbff] text-[#00fbff] hover:bg-[#00fbff] hover:text-[#041628]',
+                          { 'opacity-50 cursor-not-allowed': isSavingToJira },
+                        ]"
+                        :disabled="isSavingToJira || isSavedToJira"
                       >
-                        SAVE TO JIRA
+                        <span
+                          v-if="isSavingToJira"
+                          class="inline-block w-4 h-4 border-2 border-t-transparent border-current rounded-full animate-spin"
+                        ></span>
+                        <svg
+                          v-else-if="isSavedToJira"
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        {{ isSavedToJira ? "SAVED" : isSavingToJira ? "SAVING..." : "SAVE TO JIRA" }}
                       </button>
                       <button
                         @click="isEditingScore = false"
-                        class="text-xs text-gray-500 hover:text-gray-300 tracking-widest"
+                        class="text-xs text-gray-500 hover:text-gray-300 tracking-widest px-3 py-2 disabled:opacity-50"
+                        :disabled="isSavingToJira || isSavedToJira"
                       >
                         CANCEL
                       </button>

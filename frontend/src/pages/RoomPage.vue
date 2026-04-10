@@ -513,7 +513,8 @@ async function saveFinalScore(scoreToSave) {
 
 function setScoreFromCard(card) {
   if (!isCreator.value) return;
-  saveFinalScore(card);
+  editedScore.value = card;
+  isEditingScore.value = true;
 }
 
 function startEditingScore() {

@@ -109,6 +109,7 @@ class RoomController extends Controller
                     'jira_url' => $issue->jira_url,
                     'status' => $issue->status,
                     'final_score' => $issue->final_score,
+                    'restricted_cards' => $issue->restricted_cards,
                     'sort_order' => $issue->sort_order,
                     'voters' => $issue->votes->map(function ($vote) {
                         return [

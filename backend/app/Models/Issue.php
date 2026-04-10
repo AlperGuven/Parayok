@@ -17,6 +17,7 @@ class Issue extends Model
         'jira_url',
         'status',
         'final_score',
+        'restricted_cards',
         'sort_order',
         'added_by',
     ];
@@ -25,6 +26,7 @@ class Issue extends Model
     {
         return [
             'final_score' => 'decimal:1',
+            'restricted_cards' => 'array',
         ];
     }
 

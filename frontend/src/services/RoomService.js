@@ -44,8 +44,8 @@ class RoomService {
     return response.data;
   }
 
-  async startVoting(uuid, issueId) {
-    const response = await api.post(`/api/rooms/${uuid}/issues/${issueId}/start-voting`);
+  async startVoting(uuid, issueId, restrictedCards = null) {
+    const response = await api.post(`/api/rooms/${uuid}/issues/${issueId}/start-voting`, { restricted_cards: restrictedCards });
     return response.data;
   }
 

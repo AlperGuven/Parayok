@@ -71,6 +71,7 @@ class VoteController extends Controller
         $issue->update([
             'status' => 'voting',
             'final_score' => null,
+            'restricted_cards' => $request->restricted_cards,
         ]);
 
         $room->update(['status' => 'active']);
@@ -148,6 +149,7 @@ class VoteController extends Controller
         $issue->update([
             'status' => 'pending',
             'final_score' => null,
+            'restricted_cards' => null,
         ]);
 
         event(new VotingReset($issue, Auth::user()));

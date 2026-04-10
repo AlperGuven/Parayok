@@ -37,6 +37,7 @@ class VotingStarted implements ShouldBroadcast
             'issue_id' => $this->issue->id,
             'jira_issue_key' => $this->issue->jira_issue_key,
             'started_by' => $this->startedBy->display_name,
+            'restricted_cards' => $this->issue->restricted_cards,
         ];
     }
 }

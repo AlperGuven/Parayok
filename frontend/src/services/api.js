@@ -47,10 +47,15 @@ const api = {
       if (!response.ok) {
         console.error('API Error:', response.status, data);
         
-        if (response.status === 401) {
+        // 401 Unauthorized or 419 Page Expired (Session dropped)
+        // Also catch 403 if it specifically means unauthenticated (sometimes returned by misconfigured proxies or Sanctum states)
+        if (response.status === 401 || response.status === 419 || (response.status === 403 && data?.message === 'Unauthenticated.')) {
           localStorage.removeItem('token');
           localStorage.removeItem('user');
-          window.location.href = '/';
+          window.location.replace('/');
+          
+          // Return a dummy promise that never resolves to prevent further execution in components
+          return new Promise(() => {});
         }
         
         throw new ApiError(response.status, data, `API Error: ${response.status}`);

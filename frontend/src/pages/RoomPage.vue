@@ -36,13 +36,6 @@ const scrollToBottom = async () => {
 
 const cards = ["1", "2", "3", "5", "8", "13", "21", "?", "☕"];
 
-const availableCards = computed(() => {
-  if (selectedIssue.value?.restricted_cards && selectedIssue.value.restricted_cards.length > 0) {
-    return cards.filter((c) => selectedIssue.value.restricted_cards.includes(c));
-  }
-  return cards;
-});
-
 async function pickRandomIceBreaker() {
   if (iceBreakerQuestions.length > 0 && room.value && isCreator.value) {
     const randomIndex = Math.floor(Math.random() * iceBreakerQuestions.length);
@@ -358,34 +351,6 @@ async function startVoting() {
     isEditingScore.value = false;
   } catch (e) {
     console.error("Failed to start voting:", e);
-  }
-}
-
-async function revoteTopCards() {
-  if (!selectedIssue.value || !room.value) return;
-  try {
-    const votedCards = revealedVotes.value
-      .map((v) => v.value)
-      .filter((v) => v !== null && v !== undefined && v !== "?" && v !== "☕");
-
-    const uniqueVotedCards = [...new Set(votedCards)];
-
-    if (uniqueVotedCards.length === 0) {
-      await resetVoting();
-      return;
-    }
-
-    const issueId = selectedIssue.value.id;
-    await roomService.startVoting(room.value.uuid, issueId, uniqueVotedCards);
-    await fetchRoom();
-
-    const updatedIssue = room.value.issues.find((i) => i.id === issueId);
-    if (updatedIssue) {
-      selectedIssue.value = updatedIssue;
-    }
-    isEditingScore.value = false;
-  } catch (e) {
-    console.error("Failed to start revote:", e);
   }
 }
 
@@ -763,14 +728,6 @@ async function reopenRoom() {
                 </button>
                 <button
                   v-if="selectedIssue.status === 'revealed'"
-                  @click="resetVoting"
-                  class="px-6 py-2 border border-gray-600 text-gray-400 hover:text-white hover:border-white transition-colors font-bold tracking-widest text-sm uppercase disabled:opacity-50"
-                  :disabled="room?.status === 'completed'"
-                >
-                  RESET
-                </button>
-                <button
-                  v-if="selectedIssue.status === 'revealed'"
                   @click="revoteTopCards"
                   class="px-6 py-2 border border-[#00fbff] text-[#00fbff] hover:bg-[#00fbff] hover:text-[#041628] transition-colors font-bold tracking-widest text-sm uppercase disabled:opacity-50"
                   :disabled="room?.status === 'completed'"
@@ -781,11 +738,11 @@ async function reopenRoom() {
               </div>
             </div>
 
-            <div v-if="selectedIssue.status === 'voting'" class="mb-8">
+            <div v-if="selectedIssue.status === 'voting' || selectedIssue.status === 'revealed'" class="mb-8">
               <p class="text-sm text-gray-400 mb-6 font-sans uppercase tracking-wider">SELECT YOUR ESTIMATE</p>
               <div class="flex flex-wrap gap-4 justify-center">
                 <button
-                  v-for="card in availableCards"
+                  v-for="card in cards"
                   :key="card"
                   @click="castVote(card)"
                   :disabled="room?.status === 'completed'"

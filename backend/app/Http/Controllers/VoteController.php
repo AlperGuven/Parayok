@@ -25,7 +25,7 @@ class VoteController extends Controller
             ->where('room_id', $room->id)
             ->firstOrFail();
 
-        if ($issue->status !== 'voting') {
+        if ($issue->status !== 'voting' && $issue->status !== 'revealed') {
             return response()->json(['message' => 'Voting is not active for this issue'], 400);
         }
 
@@ -36,22 +36,55 @@ class VoteController extends Controller
                 ->delete();
             
             event(new VoteCast($issue, Auth::user(), false));
-            return response()->json(['message' => 'Vote removed successfully']);
+        } else {
+            Vote::updateOrCreate(
+                [
+                    'issue_id' => $issue->id,
+                    'user_id' => Auth::id(),
+                ],
+                [
+                    'value' => $request->value,
+                ]
+            );
+
+            event(new VoteCast($issue, Auth::user(), true));
         }
 
-        Vote::updateOrCreate(
-            [
-                'issue_id' => $issue->id,
-                'user_id' => Auth::id(),
-            ],
-            [
-                'value' => $request->value,
-            ]
-        );
-
-        event(new VoteCast($issue, Auth::user(), true));
+        if ($issue->status === 'revealed') {
+            $this->broadcastRevealUpdate($issue);
+        }
 
         return response()->json(['message' => 'Vote cast successfully']);
+    }
+
+    private function broadcastRevealUpdate(Issue $issue)
+    {
+        $votes = Vote::where('issue_id', $issue->id)
+            ->with('user')
+            ->get()
+            ->map(function ($vote) {
+                return [
+                    'user_id' => $vote->user_id,
+                    'display_name' => $vote->user->display_name,
+                    'value' => $vote->value,
+                ];
+            });
+
+        $numericVotes = $votes->filter(function ($vote) {
+            return is_numeric($vote['value']);
+        })->pluck('value');
+
+        $average = $numericVotes->count() > 0 
+            ? round($numericVotes->avg(), 1) 
+            : null;
+
+        $finalScore = $this->calculateFinalScore($votes->pluck('value'));
+
+        $issue->update([
+            'final_score' => $finalScore,
+        ]);
+
+        event(new VotesRevealed($issue, Auth::user(), $votes->toArray(), $average));
     }
 
     public function startVoting(Request $request, string $uuid, int $issueId)

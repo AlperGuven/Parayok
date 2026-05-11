@@ -27,7 +27,13 @@ onMounted(async () => {
 
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      await router.push("/dashboard");
+      const redirect = localStorage.getItem('postLoginRedirect');
+      if (redirect) {
+        localStorage.removeItem('postLoginRedirect');
+        await router.push(redirect);
+      } else {
+        await router.push("/dashboard");
+      }
     } catch (error) {
       console.error("Auth error:", error);
       console.error("Error response:", error.response?.data);

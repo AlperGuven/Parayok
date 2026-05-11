@@ -20,6 +20,11 @@ const hasRedirect = computed(() => {
 
 async function loginWithJira() {
   try {
+    const redirect = router.currentRoute.value.query.redirect as string;
+    if (redirect) {
+      localStorage.setItem('postLoginRedirect', redirect);
+    }
+    
     await api.get("/sanctum/csrf-cookie");
     window.location.href = "/auth/jira";
   } catch (error) {

@@ -36,20 +36,26 @@ class VoteController extends Controller
                 ->delete();
             
             event(new VoteCast($issue, Auth::user(), false));
-        } else {
-            Vote::updateOrCreate(
-                [
-                    'issue_id' => $issue->id,
-                    'user_id' => Auth::id(),
-                ],
-                [
-                    'value' => $request->value,
-                ]
-            );
-
-            event(new VoteCast($issue, Auth::user(), true));
+            
+            if ($issue->status === 'revealed') {
+                $this->broadcastRevealUpdate($issue);
+            }
+            
+            return response()->json(['message' => 'Vote removed successfully']);
         }
 
+        Vote::updateOrCreate(
+            [
+                'issue_id' => $issue->id,
+                'user_id' => Auth::id(),
+            ],
+            [
+                'value' => $request->value,
+            ]
+        );
+
+        event(new VoteCast($issue, Auth::user(), true));
+        
         if ($issue->status === 'revealed') {
             $this->broadcastRevealUpdate($issue);
         }

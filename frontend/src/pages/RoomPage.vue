@@ -728,12 +728,11 @@ async function reopenRoom() {
                 </button>
                 <button
                   v-if="selectedIssue.status === 'revealed'"
-                  @click="revoteTopCards"
-                  class="px-6 py-2 border border-[#00fbff] text-[#00fbff] hover:bg-[#00fbff] hover:text-[#041628] transition-colors font-bold tracking-widest text-sm uppercase disabled:opacity-50"
+                  @click="resetVoting"
+                  class="px-6 py-2 border border-gray-600 text-gray-400 hover:text-white hover:border-white transition-colors font-bold tracking-widest text-sm uppercase disabled:opacity-50"
                   :disabled="room?.status === 'completed'"
-                  title="Revote with only the cards selected in this round"
                 >
-                  REVOTE
+                  RESET
                 </button>
               </div>
             </div>

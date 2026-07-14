@@ -637,15 +637,15 @@ async function moveIssueDown(index) {
       <aside class="w-80 bg-black border-r border-[#fdfc04] flex flex-col relative z-10 shadow-glow-gold">
         <div class="p-6 border-b border-[#fdfc04] border-opacity-30">
           <div class="flex items-center justify-between">
-            <div class="flex-1 mr-4">
-              <div v-if="!isEditingRoomName" class="flex items-center gap-2 group">
+            <div class="flex-1 mr-4 min-w-0">
+              <div v-if="!isEditingRoomName" class="flex items-center gap-2 group min-w-0">
                 <h2 class="font-display font-bold text-xl text-[#fdfc04] tracking-widest uppercase truncate">
                   {{ room?.name }}
                 </h2>
                 <button
                   v-if="isCreator"
                   @click="startEditingRoomName"
-                  class="text-gray-500 hover:text-[#fdfc04] opacity-0 group-hover:opacity-100 transition-opacity"
+                  class="text-gray-500 hover:text-[#fdfc04] opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
                   title="Edit Room Name"
                 >
                   <svg
@@ -664,16 +664,16 @@ async function moveIssueDown(index) {
                   </svg>
                 </button>
               </div>
-              <div v-else class="flex items-center gap-2">
+              <div v-else class="flex items-center gap-2 min-w-0">
                 <input
                   v-model="editedRoomName"
                   type="text"
-                  class="w-full bg-black border border-[#fdfc04] text-[#fdfc04] font-display font-bold text-xl tracking-widest uppercase p-1 focus:outline-none"
+                  class="w-full min-w-0 bg-black border border-[#fdfc04] text-[#fdfc04] font-display font-bold text-xl tracking-widest uppercase p-1 focus:outline-none"
                   @keyup.enter="saveRoomName"
                   @keyup.esc="isEditingRoomName = false"
                   autofocus
                 />
-                <button @click="saveRoomName" class="text-green-500 hover:text-green-400">
+                <button @click="saveRoomName" class="text-green-500 hover:text-green-400 flex-shrink-0">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     class="h-5 w-5"
@@ -684,7 +684,7 @@ async function moveIssueDown(index) {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                   </svg>
                 </button>
-                <button @click="isEditingRoomName = false" class="text-red-500 hover:text-red-400">
+                <button @click="isEditingRoomName = false" class="text-red-500 hover:text-red-400 flex-shrink-0">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     class="h-5 w-5"
@@ -696,13 +696,13 @@ async function moveIssueDown(index) {
                   </svg>
                 </button>
               </div>
-              <p class="text-xs text-gray-400 mt-2 font-sans uppercase tracking-wider">
+              <p class="text-xs text-gray-400 mt-2 font-sans uppercase tracking-wider truncate">
                 CREATOR: <span class="text-white">{{ room?.creator_name }}</span>
               </p>
             </div>
             <button
               @click="copyRoomLink"
-              class="text-xs text-gray-400 hover:text-[#fdfc04] transition-colors uppercase tracking-wider"
+              class="text-xs text-gray-400 hover:text-[#fdfc04] transition-colors uppercase tracking-wider flex-shrink-0"
             >
               {{ isCopied ? "COPIED!" : "COPY LINK" }}
             </button>

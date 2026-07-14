@@ -27,6 +27,11 @@ const isSavedToJira = ref(false);
 const currentIceBreaker = ref("");
 const issuesListRef = ref(null);
 
+const showDuplicateModal = ref(false);
+const showConfirmCompleteModal = ref(false);
+const isEditingRoomName = ref(false);
+const editedRoomName = ref("");
+
 const scrollToBottom = async () => {
   await nextTick();
   if (issuesListRef.value) {
@@ -242,6 +247,22 @@ function setupEcho() {
       if (data.ice_breaker) {
         currentIceBreaker.value = data.ice_breaker;
       }
+    })
+    .listen(".issue.deleted", (data) => {
+      if (room.value && room.value.issues) {
+        room.value.issues = room.value.issues.filter((i) => i.id !== data.issue_id);
+        if (selectedIssue.value?.id === data.issue_id) {
+          selectedIssue.value = room.value.issues.length > 0 ? room.value.issues[0] : null;
+        }
+      }
+    })
+    .listen(".issues.reordered", () => {
+      fetchRoom(); // Refresh list to get new order
+    })
+    .listen(".room.name.updated", (data) => {
+      if (room.value) {
+        room.value.name = data.name;
+      }
     });
 }
 
@@ -265,7 +286,13 @@ async function fetchRoom() {
       if (activeIssue) {
         selectedIssue.value = activeIssue;
       } else {
-        selectedIssue.value = room.value.issues[0];
+        const previouslySelectedId = selectedIssue.value?.id;
+        const stillExists = room.value.issues.find((i) => i.id === previouslySelectedId);
+        if (stillExists) {
+          selectedIssue.value = stillExists;
+        } else {
+          selectedIssue.value = room.value.issues[0];
+        }
       }
     } else {
       // Empty room logic - make sure ice breaker is set if available
@@ -293,7 +320,13 @@ async function fetchRoom() {
           if (activeIssue) {
             selectedIssue.value = activeIssue;
           } else {
-            selectedIssue.value = room.value.issues[0];
+            const previouslySelectedId = selectedIssue.value?.id;
+            const stillExists = room.value.issues.find((i) => i.id === previouslySelectedId);
+            if (stillExists) {
+              selectedIssue.value = stillExists;
+            } else {
+              selectedIssue.value = room.value.issues[0];
+            }
           }
         } else {
           if (room.value.current_ice_breaker) {
@@ -400,8 +433,21 @@ async function addIssue() {
     await fetchRoom();
     scrollToBottom();
   } catch (e) {
-    error.value = e.response?.data?.message || "Failed to add issue";
+    if (e.response?.status === 400 && e.response?.data?.message === "Issue already exists in this room") {
+      showDuplicateModal.value = true;
+    } else {
+      error.value = e.response?.data?.message || "Failed to add issue";
+    }
   }
+}
+
+function triggerFinishRoom() {
+  showConfirmCompleteModal.value = true;
+}
+
+async function confirmFinishRoom() {
+  showConfirmCompleteModal.value = false;
+  await finishRoom();
 }
 
 async function finishRoom() {
@@ -495,6 +541,80 @@ async function reopenRoom() {
     console.error("Failed to reopen room:", e);
   }
 }
+
+function startEditingRoomName() {
+  if (!isCreator.value) return;
+  editedRoomName.value = room.value.name;
+  isEditingRoomName.value = true;
+}
+
+async function saveRoomName() {
+  if (!editedRoomName.value.trim() || !room.value) return;
+  try {
+    const data = await roomService.updateRoomName(room.value.uuid, editedRoomName.value);
+    room.value.name = data.name;
+    isEditingRoomName.value = false;
+  } catch (e) {
+    console.error("Failed to update room name:", e);
+  }
+}
+
+async function removeIssue(issueId) {
+  if (!isCreator.value || !room.value) return;
+  if (!confirm("Are you sure you want to remove this issue?")) return;
+
+  try {
+    await roomService.deleteIssue(room.value.uuid, issueId);
+    room.value.issues = room.value.issues.filter((i) => i.id !== issueId);
+    if (selectedIssue.value?.id === issueId) {
+      selectedIssue.value = room.value.issues.length > 0 ? room.value.issues[0] : null;
+    }
+  } catch (e) {
+    console.error("Failed to delete issue:", e);
+  }
+}
+
+async function moveIssueUp(index) {
+  if (!isCreator.value || !room.value || index === 0) return;
+  const issue = room.value.issues[index];
+  const prevIssue = room.value.issues[index - 1];
+
+  const tempOrder = issue.sort_order;
+  issue.sort_order = prevIssue.sort_order;
+  prevIssue.sort_order = tempOrder;
+
+  room.value.issues[index] = prevIssue;
+  room.value.issues[index - 1] = issue;
+  triggerRef(room);
+
+  try {
+    await roomService.reorderIssue(room.value.uuid, issue.id, issue.sort_order);
+    await roomService.reorderIssue(room.value.uuid, prevIssue.id, prevIssue.sort_order);
+  } catch (e) {
+    console.error("Failed to reorder issue:", e);
+  }
+}
+
+async function moveIssueDown(index) {
+  if (!isCreator.value || !room.value || index === room.value.issues.length - 1) return;
+  const issue = room.value.issues[index];
+  const nextIssue = room.value.issues[index + 1];
+
+  const tempOrder = issue.sort_order;
+  issue.sort_order = nextIssue.sort_order;
+  nextIssue.sort_order = tempOrder;
+
+  room.value.issues[index] = nextIssue;
+  room.value.issues[index + 1] = issue;
+  triggerRef(room);
+
+  try {
+    await roomService.reorderIssue(room.value.uuid, issue.id, issue.sort_order);
+    await roomService.reorderIssue(room.value.uuid, nextIssue.id, nextIssue.sort_order);
+  } catch (e) {
+    console.error("Failed to reorder issue:", e);
+  }
+}
 </script>
 
 <template>
@@ -517,8 +637,65 @@ async function reopenRoom() {
       <aside class="w-80 bg-black border-r border-[#fdfc04] flex flex-col relative z-10 shadow-glow-gold">
         <div class="p-6 border-b border-[#fdfc04] border-opacity-30">
           <div class="flex items-center justify-between">
-            <div>
-              <h2 class="font-display font-bold text-xl text-[#fdfc04] tracking-widest uppercase">{{ room?.name }}</h2>
+            <div class="flex-1 mr-4">
+              <div v-if="!isEditingRoomName" class="flex items-center gap-2 group">
+                <h2 class="font-display font-bold text-xl text-[#fdfc04] tracking-widest uppercase truncate">
+                  {{ room?.name }}
+                </h2>
+                <button
+                  v-if="isCreator"
+                  @click="startEditingRoomName"
+                  class="text-gray-500 hover:text-[#fdfc04] opacity-0 group-hover:opacity-100 transition-opacity"
+                  title="Edit Room Name"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <div v-else class="flex items-center gap-2">
+                <input
+                  v-model="editedRoomName"
+                  type="text"
+                  class="w-full bg-black border border-[#fdfc04] text-[#fdfc04] font-display font-bold text-xl tracking-widest uppercase p-1 focus:outline-none"
+                  @keyup.enter="saveRoomName"
+                  @keyup.esc="isEditingRoomName = false"
+                  autofocus
+                />
+                <button @click="saveRoomName" class="text-green-500 hover:text-green-400">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                </button>
+                <button @click="isEditingRoomName = false" class="text-red-500 hover:text-red-400">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
               <p class="text-xs text-gray-400 mt-2 font-sans uppercase tracking-wider">
                 CREATOR: <span class="text-white">{{ room?.creator_name }}</span>
               </p>
@@ -569,10 +746,10 @@ async function reopenRoom() {
           <div class="flex-1 overflow-y-auto px-6 pb-6 custom-scrollbar" ref="issuesListRef">
             <div class="space-y-3">
               <div
-                v-for="issue in room?.issues"
+                v-for="(issue, index) in room?.issues"
                 :key="issue.id"
                 :class="[
-                  'p-4 border transition-all duration-300 relative group cursor-pointer',
+                  'p-4 border transition-all duration-300 relative group cursor-pointer pr-10',
                   selectedIssue?.id === issue.id
                     ? 'bg-black border-[#fdfc04] shadow-[0_0_10px_rgba(253,252,4,0.2)]'
                     : 'bg-transparent border-gray-800 hover:border-[#fdfc04] hover:border-opacity-50',
@@ -594,6 +771,65 @@ async function reopenRoom() {
                   v-if="selectedIssue?.id === issue.id"
                   class="absolute left-0 top-0 bottom-0 w-1 bg-[#fdfc04]"
                 ></div>
+
+                <!-- Action Buttons -->
+                <div
+                  v-if="isCreator && room?.status !== 'completed'"
+                  class="absolute right-2 top-0 bottom-0 flex flex-col justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <button
+                    @click.stop="moveIssueUp(index)"
+                    :disabled="index === 0"
+                    class="text-gray-500 hover:text-[#fdfc04] disabled:opacity-30"
+                    title="Move Up"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                    </svg>
+                  </button>
+                  <button
+                    @click.stop="removeIssue(issue.id)"
+                    class="text-gray-500 hover:text-red-500"
+                    title="Remove Issue"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    @click.stop="moveIssueDown(index)"
+                    :disabled="index === room?.issues.length - 1"
+                    class="text-gray-500 hover:text-[#fdfc04] disabled:opacity-30"
+                    title="Move Down"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -962,6 +1198,54 @@ async function reopenRoom() {
           RE-OPEN ROOM
         </button>
       </main>
+    </div>
+
+    <!-- Duplicate Issue Modal -->
+    <div
+      v-if="showDuplicateModal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm"
+    >
+      <div class="art-deco-card p-8 max-w-sm w-full mx-4 border border-[#fdfc04]">
+        <h3 class="text-xl font-display font-bold text-[#fdfc04] mb-4 text-center tracking-widest uppercase">
+          Issue Exists
+        </h3>
+        <p class="text-gray-300 mb-8 text-center font-sans">This issue has already been added to the room.</p>
+        <button
+          @click="showDuplicateModal = false"
+          class="w-full py-3 art-deco-button primary font-bold tracking-widest text-sm"
+        >
+          OK
+        </button>
+      </div>
+    </div>
+
+    <!-- Confirm Complete Modal -->
+    <div
+      v-if="showConfirmCompleteModal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm"
+    >
+      <div class="art-deco-card p-8 max-w-sm w-full mx-4 border border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]">
+        <h3 class="text-xl font-display font-bold text-red-500 mb-4 text-center tracking-widest uppercase">
+          Complete Room?
+        </h3>
+        <p class="text-gray-300 mb-8 text-center font-sans">
+          Are you sure you want to complete this room? All voting will be closed.
+        </p>
+        <div class="flex gap-4">
+          <button
+            @click="confirmFinishRoom"
+            class="flex-1 py-3 bg-red-900 border border-red-500 text-red-100 hover:bg-red-800 hover:text-white transition-colors font-bold tracking-widest text-sm"
+          >
+            YES
+          </button>
+          <button
+            @click="showConfirmCompleteModal = false"
+            class="flex-1 py-3 border border-gray-600 text-gray-300 hover:text-white hover:border-gray-400 transition-colors font-bold tracking-widest text-sm"
+          >
+            NO
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>

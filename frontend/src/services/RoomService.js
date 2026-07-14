@@ -34,6 +34,11 @@ class RoomService {
     return response.data;
   }
 
+  async updateRoomName(uuid, name) {
+    const response = await api.patch(`/api/rooms/${uuid}`, { name });
+    return response.data;
+  }
+
   async updateIceBreaker(uuid, question) {
     const response = await api.post(`/api/rooms/${uuid}/ice-breaker`, { ice_breaker: question });
     return response.data;
@@ -66,6 +71,16 @@ class RoomService {
 
   async addIssueFromUrl(uuid, url) {
     const response = await api.post(`/api/rooms/${uuid}/issues/from-url`, { url });
+    return response.data;
+  }
+
+  async deleteIssue(uuid, issueId) {
+    const response = await api.delete(`/api/rooms/${uuid}/issues/${issueId}`);
+    return response.data;
+  }
+
+  async reorderIssue(uuid, issueId, sortOrder) {
+    const response = await api.patch(`/api/rooms/${uuid}/issues/${issueId}/order`, { sort_order: sortOrder });
     return response.data;
   }
 }

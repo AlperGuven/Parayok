@@ -140,7 +140,10 @@ class IssueController extends Controller
             ->where('room_id', $room->id)
             ->firstOrFail();
 
+        $issueId = $issue->id;
         $issue->delete();
+
+        event(new \App\Events\IssueDeleted($room, $issueId));
 
         return response()->json(['message' => 'Issue removed']);
     }
@@ -163,6 +166,8 @@ class IssueController extends Controller
             ->firstOrFail();
 
         $issue->update(['sort_order' => $request->sort_order]);
+
+        event(new \App\Events\IssuesReordered($room));
 
         return response()->json(['message' => 'Order updated']);
     }

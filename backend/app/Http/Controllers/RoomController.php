@@ -83,7 +83,14 @@ class RoomController extends Controller
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
-        $room = Room::where('uuid', $uuid)->with(['issues.votes.user', 'roomParticipants.user', 'creator'])->firstOrFail();
+        $room = Room::where('uuid', $uuid)->with([
+            'issues' => function ($query) {
+                $query->orderBy('sort_order', 'asc');
+            },
+            'issues.votes.user',
+            'roomParticipants.user',
+            'creator'
+        ])->firstOrFail();
         
         $isParticipant = $room->participants()->where('user_id', $user->id)->exists();
         
@@ -175,6 +182,25 @@ class RoomController extends Controller
         }
 
         return response()->json(['message' => 'Left successfully']);
+    }
+
+    public function update(Request $request, string $uuid)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+
+        $room = Room::where('uuid', $uuid)->firstOrFail();
+        
+        if ($room->created_by !== $request->user()->id) {
+            return response()->json(['message' => 'Only room creator can update the room name'], 403);
+        }
+
+        $room->update(['name' => $request->name]);
+
+        event(new \App\Events\RoomNameUpdated($room));
+
+        return response()->json(['message' => 'Room name updated successfully', 'name' => $room->name]);
     }
 
     public function complete(Request $request, string $uuid)

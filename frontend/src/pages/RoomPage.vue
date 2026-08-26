@@ -226,7 +226,7 @@ function setupEcho() {
 
       const exists = room.value.issues.find((i) => i.id == data.id);
       if (!exists) {
-        room.value.issues.push({
+        room.value.issues.unshift({
           id: data.id,
           jira_issue_key: data.jira_issue_key,
           summary: data.summary,
@@ -236,7 +236,9 @@ function setupEcho() {
           final_score: null,
         });
         triggerRef(room);
-        scrollToBottom();
+        if (issuesListRef.value) {
+          issuesListRef.value.scrollTop = 0;
+        }
       }
     })
     .listen(".room.deleted", () => {
@@ -431,7 +433,9 @@ async function addIssue() {
     showAddIssue.value = false;
     newIssueUrl.value = "";
     await fetchRoom();
-    scrollToBottom();
+    if (issuesListRef.value) {
+      issuesListRef.value.scrollTop = 0;
+    }
   } catch (e) {
     if (e.response?.status === 400 && e.response?.data?.message === "Issue already exists in this room") {
       showDuplicateModal.value = true;
@@ -480,6 +484,17 @@ const isCreator = computed(() => {
 
 const isGuest = computed(() => {
   return !!(authStore.user && authStore.user.is_guest);
+});
+
+const votedUsers = computed(() => {
+  if (!selectedIssue.value || !selectedIssue.value.voters) return [];
+  return selectedIssue.value.voters;
+});
+
+const pendingUsers = computed(() => {
+  if (!room.value || !room.value.participants || !selectedIssue.value) return [];
+  const voters = selectedIssue.value.voters || [];
+  return room.value.participants.filter((p) => p.is_online && !voters.some((v) => v.user_id === p.user_id));
 });
 
 async function exitRoom() {
@@ -573,48 +588,6 @@ async function removeIssue(issueId) {
     console.error("Failed to delete issue:", e);
   }
 }
-
-async function moveIssueUp(index) {
-  if (!isCreator.value || !room.value || index === 0) return;
-  const issue = room.value.issues[index];
-  const prevIssue = room.value.issues[index - 1];
-
-  const tempOrder = issue.sort_order;
-  issue.sort_order = prevIssue.sort_order;
-  prevIssue.sort_order = tempOrder;
-
-  room.value.issues[index] = prevIssue;
-  room.value.issues[index - 1] = issue;
-  triggerRef(room);
-
-  try {
-    await roomService.reorderIssue(room.value.uuid, issue.id, issue.sort_order);
-    await roomService.reorderIssue(room.value.uuid, prevIssue.id, prevIssue.sort_order);
-  } catch (e) {
-    console.error("Failed to reorder issue:", e);
-  }
-}
-
-async function moveIssueDown(index) {
-  if (!isCreator.value || !room.value || index === room.value.issues.length - 1) return;
-  const issue = room.value.issues[index];
-  const nextIssue = room.value.issues[index + 1];
-
-  const tempOrder = issue.sort_order;
-  issue.sort_order = nextIssue.sort_order;
-  nextIssue.sort_order = tempOrder;
-
-  room.value.issues[index] = nextIssue;
-  room.value.issues[index + 1] = issue;
-  triggerRef(room);
-
-  try {
-    await roomService.reorderIssue(room.value.uuid, issue.id, issue.sort_order);
-    await roomService.reorderIssue(room.value.uuid, nextIssue.id, nextIssue.sort_order);
-  } catch (e) {
-    console.error("Failed to reorder issue:", e);
-  }
-}
 </script>
 
 <template>
@@ -645,7 +618,7 @@ async function moveIssueDown(index) {
                 <button
                   v-if="isCreator"
                   @click="startEditingRoomName"
-                  class="text-gray-500 hover:text-[#fdfc04] opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                  class="text-gray-500 hover:text-[#fdfc04] transition-colors flex-shrink-0"
                   title="Edit Room Name"
                 >
                   <svg
@@ -778,22 +751,6 @@ async function moveIssueDown(index) {
                   class="absolute right-2 top-0 bottom-0 flex flex-col justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <button
-                    @click.stop="moveIssueUp(index)"
-                    :disabled="index === 0"
-                    class="text-gray-500 hover:text-[#fdfc04] disabled:opacity-30"
-                    title="Move Up"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      class="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-                    </svg>
-                  </button>
-                  <button
                     @click.stop="removeIssue(issue.id)"
                     class="text-gray-500 hover:text-red-500"
                     title="Remove Issue"
@@ -811,22 +768,6 @@ async function moveIssueDown(index) {
                         stroke-width="2"
                         d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                       />
-                    </svg>
-                  </button>
-                  <button
-                    @click.stop="moveIssueDown(index)"
-                    :disabled="index === room?.issues.length - 1"
-                    class="text-gray-500 hover:text-[#fdfc04] disabled:opacity-30"
-                    title="Move Down"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      class="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
                 </div>
@@ -921,25 +862,70 @@ async function moveIssueDown(index) {
             <div class="flex items-center justify-between mb-8">
               <div class="flex items-center gap-4">
                 <h3 class="text-xl font-display font-bold text-[#fdfc04] uppercase tracking-widest">Estimations</h3>
-                <div v-if="selectedIssue.status === 'voting'" class="flex -space-x-2">
-                  <div
-                    v-for="voter in selectedIssue.voters"
-                    :key="voter.user_id"
-                    class="w-8 h-8 rounded-full border-2 border-[#fdfc04] bg-[#00fbff] flex items-center justify-center text-[#041628] font-bold text-xs relative group"
-                    :title="voter.display_name"
-                  >
-                    <img
-                      v-if="voter.avatar_url"
-                      :src="voter.avatar_url"
-                      class="w-full h-full rounded-full object-cover"
-                    />
-                    <span v-else>{{ voter.display_name.charAt(0).toUpperCase() }}</span>
 
-                    <!-- Tooltip -->
-                    <div
-                      class="absolute bottom-full mb-2 hidden group-hover:block bg-black border border-[#fdfc04] text-[#fdfc04] text-xs px-2 py-1 whitespace-nowrap z-30 uppercase tracking-wider"
+                <div
+                  v-if="selectedIssue.status === 'voting'"
+                  class="flex items-center gap-6 ml-4 pl-4 border-l border-gray-700"
+                >
+                  <!-- Voted -->
+                  <div class="flex flex-col gap-1">
+                    <span class="text-[10px] text-[#00fbff] font-bold tracking-widest uppercase"
+                      >Voted ({{ votedUsers.length }})</span
                     >
-                      {{ voter.display_name }} voted!
+                    <div class="flex -space-x-2">
+                      <div
+                        v-for="voter in votedUsers"
+                        :key="voter.user_id"
+                        class="w-8 h-8 rounded-full border-2 border-[#00fbff] bg-[#00fbff] flex items-center justify-center text-[#041628] font-bold text-xs relative group"
+                        :title="voter.display_name"
+                      >
+                        <img
+                          v-if="voter.avatar_url"
+                          :src="voter.avatar_url"
+                          class="w-full h-full rounded-full object-cover"
+                        />
+                        <span v-else>{{ voter.display_name.charAt(0).toUpperCase() }}</span>
+                        <!-- Tooltip -->
+                        <div
+                          class="absolute bottom-full mb-2 hidden group-hover:block bg-black border border-[#00fbff] text-[#00fbff] text-xs px-2 py-1 whitespace-nowrap z-30 uppercase tracking-wider"
+                        >
+                          {{ voter.display_name }}
+                        </div>
+                      </div>
+                      <div v-if="votedUsers.length === 0" class="text-xs text-gray-500 italic h-8 flex items-center">
+                        None
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Waiting -->
+                  <div class="flex flex-col gap-1">
+                    <span class="text-[10px] text-gray-500 font-bold tracking-widest uppercase"
+                      >Waiting ({{ pendingUsers.length }})</span
+                    >
+                    <div class="flex -space-x-2">
+                      <div
+                        v-for="user in pendingUsers"
+                        :key="user.user_id"
+                        class="w-8 h-8 rounded-full border-2 border-gray-700 bg-gray-800 flex items-center justify-center text-gray-400 font-bold text-xs relative group opacity-60 hover:opacity-100 transition-opacity"
+                        :title="user.display_name"
+                      >
+                        <img
+                          v-if="user.avatar_url"
+                          :src="user.avatar_url"
+                          class="w-full h-full rounded-full object-cover grayscale"
+                        />
+                        <span v-else>{{ user.display_name.charAt(0).toUpperCase() }}</span>
+                        <!-- Tooltip -->
+                        <div
+                          class="absolute bottom-full mb-2 hidden group-hover:block bg-black border border-gray-500 text-gray-400 text-xs px-2 py-1 whitespace-nowrap z-30 uppercase tracking-wider"
+                        >
+                          {{ user.display_name }}
+                        </div>
+                      </div>
+                      <div v-if="pendingUsers.length === 0" class="text-xs text-gray-500 italic h-8 flex items-center">
+                        None
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -85,7 +85,7 @@ class RoomController extends Controller
 
         $room = Room::where('uuid', $uuid)->with([
             'issues' => function ($query) {
-                $query->orderBy('sort_order', 'asc');
+                $query->orderBy('id', 'desc');
             },
             'issues.votes.user',
             'roomParticipants.user',

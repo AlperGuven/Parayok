@@ -1,71 +1,51 @@
 #!/bin/bash
-
-# Hata durumunda durdur
+# Run as root on the Debian 13 VPS after provisioning the environment files.
 set -e
 
-echo "🚀 Deploy başlatılıyor..."
+PROJECT_DIR="/var/www/html/parayok"
+BACKEND_DIR="$PROJECT_DIR/backend"
+FRONTEND_DIR="$PROJECT_DIR/frontend"
 
-# Scriptin bulunduğu dizini referans alarak proje köküne git (backend/scripts/.. -> backend -> .. -> root)
-cd "$(dirname "$0")/../.."
-echo "📂 Çalışma dizini: $(pwd)"
+if [ "$EUID" -ne 0 ]; then
+    echo "Run with sudo" >&2
+    exit 1
+fi
 
-# 1. Kodları Güncelle
-echo "📥 Git pull yapılıyor..."
-git pull origin main
+on_error() {
+    echo "Deploy failed at line $1; leaving maintenance mode" >&2
+    (cd "$BACKEND_DIR" && sudo -u www-data php artisan up) || true
+    exit 1
+}
+trap 'on_error $LINENO' ERR
 
-# 2. Backend Kurulumu
-echo "🐘 Backend bağımlılıkları yükleniyor..."
-cd backend
-# PHP sürüm uyumsuzluğunu önlemek için update kullanıyoruz
-composer update --no-dev --optimize-autoloader
+cd "$BACKEND_DIR"
+sudo -u www-data php artisan down
 
-echo "🗄️ Veritabanı migrate ediliyor..."
-php artisan migrate --force
+cd "$PROJECT_DIR"
+sudo -u www-data git pull --ff-only origin main
 
-echo "🧹 Cache temizleniyor..."
-php artisan optimize:clear
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
+cd "$BACKEND_DIR"
+sudo -u www-data composer install --no-dev --optimize-autoloader --no-interaction
 
-# 3. Frontend Build ve Taşıma
-echo "🎨 Frontend build ediliyor..."
-cd ../frontend
+cd "$FRONTEND_DIR"
+sudo -u www-data npm ci
+sudo -u www-data npm run build
+cp -r dist/. "$BACKEND_DIR/public/"
+chown -R www-data:www-data "$BACKEND_DIR/public/"
 
-# Backend .env dosyasından Reverb App Key'i al
-REVERB_APP_KEY=$(grep REVERB_APP_KEY ../backend/.env | cut -d '=' -f2)
+cd "$BACKEND_DIR"
+sudo -u www-data php artisan migrate --force
+sudo -u www-data php artisan config:cache
+sudo -u www-data php artisan route:cache
+sudo -u www-data php artisan view:cache
+sudo -u www-data php artisan event:cache
+sudo -u www-data php artisan queue:restart
 
-# Frontend için .env.production dosyası oluştur
-echo "📝 Frontend .env.production dosyası oluşturuluyor..."
-rm -f .env .env.production # Eski dosyaları temizle
-cat > .env.production <<EOF
-VITE_REVERB_APP_KEY=$REVERB_APP_KEY
-VITE_REVERB_HOST="parayok.space"
-VITE_REVERB_PORT="443"
-VITE_REVERB_SCHEME="https"
-EOF
+supervisorctl restart parayok-reverb
+supervisorctl restart 'parayok-worker:*'
+systemctl reload php8.4-fpm
+systemctl reload nginx
 
-# Build al
-echo "🔨 Frontend build alınıyor..."
-npm install && npm run build
-
-echo "🚚 Build dosyaları backend'e taşınıyor..."
-# Backend public temizliği (eski build dosyaları)
-rm -rf ../backend/public/assets
-rm -f ../backend/public/index.html
-
-# Yeni dosyaları kopyala
-cp -r dist/assets ../backend/public/
-cp dist/index.html ../backend/public/
-
-# Favicon, manifest ve llms.txt gibi root dizinde durması gereken statik dosyaları kopyala
-cp dist/*.png ../backend/public/ 2>/dev/null || true
-cp dist/*.ico ../backend/public/ 2>/dev/null || true
-cp dist/*.webmanifest ../backend/public/ 2>/dev/null || true
-cp dist/*.txt ../backend/public/ 2>/dev/null || true
-
-# Dosya izinlerini Nginx'in okuyabileceği şekilde ayarla (sudo ile çalıştırıldığında sorun olmaması için)
-chmod -R 755 ../backend/public/
-chown -R www-data:www-data ../backend/public/ 2>/dev/null || true
-
-echo "✅ Deploy başarıyla tamamlandı! (https://parayok.space)"
+sudo -u www-data php artisan up
+trap - ERR
+supervisorctl status

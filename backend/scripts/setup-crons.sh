@@ -1,22 +1,22 @@
-# Parayok - Cron Jobs Setup
+#!/bin/bash
+# Parayok - Cron Jobs Setup (Debian 13)
 # Run as: sudo bash scripts/setup-crons.sh
 
+set -e
 echo "=== Setting up Cron Jobs for Parayok ==="
 
-# Create log files
-touch /var/log/reverb-health.log
-touch /var/log/backup.log
-chmod 666 /var/log/reverb-health.log
-chmod 666 /var/log/backup.log
+touch /var/log/reverb-health.log /var/log/backup.log
+chmod 600 /var/log/reverb-health.log /var/log/backup.log
 
-# Add cron jobs
-(crontab -l 2>/dev/null || true; echo "*/5 * * * * /var/www/html/parayok/backend/scripts/reverb-health.sh >> /var/log/reverb-health.log 2>&1") | crontab -
-(crontab -l 2>/dev/null || true; echo "0 2 * * * /var/www/html/parayok/backend/scripts/backup.sh >> /var/log/backup.log 2>&1") | crontab -
+(crontab -u www-data -l 2>/dev/null || true; echo "* * * * * cd /var/www/html/parayok/backend && php artisan schedule:run >> /dev/null 2>&1") | sort -u | crontab -u www-data -
 
-# List cron jobs
+(crontab -l 2>/dev/null || true; echo "*/5 * * * * bash /var/www/html/parayok/backend/scripts/reverb-health.sh >> /var/log/reverb-health.log 2>&1"; echo "0 2 * * * bash /var/www/html/parayok/backend/scripts/backup.sh >> /var/log/backup.log 2>&1") | grep -v 'artisan schedule:run' | sort -u | crontab -
+
 echo ""
-echo "Current cron jobs:"
+echo "Root cron jobs:"
 crontab -l
+echo "www-data cron jobs:"
+crontab -u www-data -l
 
 echo ""
 echo "=== Cron Setup Complete ==="
